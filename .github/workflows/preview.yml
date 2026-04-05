@@ -22,36 +22,26 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Fetch gh-pages branch or create it
-          git fetch origin gh-pages || true
-          git checkout gh-pages || git checkout --orphan gh-pages
+          # Save PR files to a temp dir
+          TMPDIR=$(mktemp -d)
+          rsync -a --exclude='.git' --exclude='.github' . "$TMPDIR/"
 
-          # Pull latest if branch exists
-          git pull origin gh-pages --rebase || true
+          # Switch to gh-pages (fetch or create)
+          git fetch origin gh-pages:gh-pages 2>/dev/null || true
+          if git rev-parse --verify gh-pages >/dev/null 2>&1; then
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . 2>/dev/null || true
+          fi
 
-          # Clean out old preview for this PR
+          # Clean out old preview for this PR and copy new files in
           rm -rf "${PREVIEW_DIR}"
           mkdir -p "${PREVIEW_DIR}"
-
-          # Checkout PR files into the preview directory
-          git checkout ${{ github.event.pull_request.head.sha }} -- .
-
-          # Move all non-preview, non-git files into the preview dir
-          for item in *; do
-            if [[ "$item" != pr-* && "$item" != .git ]]; then
-              cp -r "$item" "${PREVIEW_DIR}/" 2>/dev/null || true
-            fi
-          done
-
-          # Remove the non-preview files (keep only pr-* dirs and .github)
-          for item in *; do
-            if [[ "$item" != pr-* ]]; then
-              rm -rf "$item"
-            fi
-          done
+          rsync -a "$TMPDIR/" "${PREVIEW_DIR}/"
 
           git add -A
-          git commit -m "Preview for PR #${PR_NUMBER}" --allow-empty
+          git diff --cached --quiet || git commit -m "Preview for PR #${PR_NUMBER}"
           git push origin gh-pages
 
       - name: Comment preview URL

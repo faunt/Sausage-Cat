@@ -5,9 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -16,15 +14,39 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
+      - name: Deploy main to gh-pages root
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          # Save main branch files to a temp dir
+          TMPDIR=$(mktemp -d)
+          # Copy everything except .git and .github
+          rsync -a --exclude='.git' --exclude='.github' . "$TMPDIR/"
+
+          # Switch to gh-pages (fetch or create)
+          git fetch origin gh-pages:gh-pages 2>/dev/null || true
+          if git rev-parse --verify gh-pages >/dev/null 2>&1; then
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . 2>/dev/null || true
+          fi
+
+          # Remove all root files but keep pr-* preview dirs
+          for item in *; do
+            case "$item" in
+              pr-*) ;;
+              *) rm -rf "$item" ;;
+            esac
+          done
+
+          # Copy main content into root
+          rsync -a "$TMPDIR/" .
+
+          git add -A
+          git diff --cached --quiet || git commit -m "Deploy main to Pages"
+          git push origin gh-pages
