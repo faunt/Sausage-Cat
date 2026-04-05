@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat vs Capybara Spelling Race!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8E8 50%, #90EE90 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin: 20px 0;
+            color: #fff;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .score {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            font-size: 1.3em;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .racetrack {
+            margin: 30px 0;
+            position: relative;
+            background: linear-gradient(135deg, #90EE90 0%, #7CCD7C 100%);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: inset 0 5px 20px rgba(0,0,0,0.2);
+            min-height: 480px;
+        }
+
+        .track-container {
+            position: relative;
+            width: 100%;
+            height: 450px;
+        }
+
+        #trackSVG {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .track-path {
+            fill: none;
+            stroke: #654321;
+            stroke-width: 80;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .track-inner {
+            fill: none;
+            stroke: #8B4513;
+            stroke-width: 70;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .track-lines {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.4);
+            stroke-width: 3;
+            stroke-dasharray: 20, 15;
+            stroke-linecap: round;
+        }
+
+        .racer {
+            position: absolute;
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 10;
+            transform: translate(-50%, -50%);
+        }
+
+        .cat {
+            width: 70px;
+            height: 70px;
+            position: relative;
+        }
+
+        .cat-body {
+            width: 60px;
+            height: 45px;
+            background: linear-gradient(135deg, #FF8C42 0%, #FFA55C 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: relative;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .cat-head {
+            width: 45px;
+            height: 40px;
+            background: linear-gradient(135deg, #FF8C42 0%, #FFA55C 100%);
+            border-radius: 50% 50% 40% 40%;
+            position: absolute;
+            top: -25px;
+            left: 5px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        }
+
+        .cat-ear {
+            width: 15px;
+            height: 18px;
+            background: linear-gradient(135deg, #FF8C42 0%, #FFA55C 100%);
+            position: absolute;
+            top: -5px;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+
+        .cat-ear.left {
+            left: 5px;
+            transform: rotate(-10deg);
+        }
+
+        .cat-ear.right {
+            right: 5px;
+            transform: rotate(10deg);
+        }
+
+        /* Anime-style closed slit eyes for cat */
+        .cat-eyes {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .cat-eye {
+            width: 12px;
+            height: 2px;
+            background: #2C3E50;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        /* Happy cat eyes - open and curved */
+        .cat.happy .cat-eye {
+            height: 8px;
+            border-radius: 50%;
+            animation: sparkle 0.6s ease-in-out;
+        }
+
+        /* Sad cat eyes */
+        .cat.sad .cat-eye {
+            transform: rotate(20deg);
+            width: 10px;
+        }
+
+        /* Cat mouth - hidden by default */
+        .cat-mouth {
+            position: absolute;
+            width: 15px;
+            height: 8px;
+            border: 2px solid #2C3E50;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .cat.happy .cat-mouth {
+            opacity: 1;
+            transform: translateX(-50%) scale(1.2);
+        }
+
+        .cat.sad .cat-mouth {
+            opacity: 1;
+            border-radius: 10px 10px 0 0;
+            border-bottom: none;
+            border-top: 2px solid #2C3E50;
+        }
+
+        /* Cat tongue - for winning */
+        .cat-tongue {
+            position: absolute;
+            width: 8px;
+            height: 10px;
+            background: #FF69B4;
+            border-radius: 0 0 50% 50%;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+
+        .cat.winner .cat-tongue {
+            opacity: 1;
+            transform: translateX(-50%) translateY(8px);
+        }
+
+        .cat-tail {
+            width: 30px;
+            height: 8px;
+            background: linear-gradient(90deg, #FF8C42 0%, #FFA55C 100%);
+            border-radius: 10px;
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-20deg);
+            transition: transform 0.3s ease;
+        }
+
+        .cat.happy .cat-tail {
+            animation: wagTail 0.4s ease-in-out 2;
+        }
+
+        /* Cat claws */
+        .cat-paws {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .cat-claw {
+            width: 3px;
+            height: 6px;
+            background: #2C3E50;
+            border-radius: 50% 50% 0 0;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+
+        @keyframes wagTail {
+            0%, 100% { transform: translateY(-50%) rotate(-20deg); }
+            50% { transform: translateY(-50%) rotate(10deg); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .capybara {
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+
+        .capybara-body {
+            width: 75px;
+            height: 50px;
+            background: linear-gradient(135deg, #8B6F47 0%, #A0826D 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: relative;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .capybara-head {
+            width: 50px;
+            height: 45px;
+            background: linear-gradient(135deg, #8B6F47 0%, #A0826D 100%);
+            border-radius: 60% 60% 50% 50%;
+            position: absolute;
+            top: -28px;
+            left: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .capybara-ear {
+            width: 12px;
+            height: 15px;
+            background: linear-gradient(135deg, #8B6F47 0%, #A0826D 100%);
+            border-radius: 50% 50% 0 0;
+            position: absolute;
+            top: 0;
+        }
+
+        .capybara-ear.left {
+            left: 8px;
+        }
+
+        .capybara-ear.right {
+            right: 8px;
+        }
+
+        /* Orange on capybara's head */
+        .capybara-orange {
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #FFA500 0%, #FF8C00 100%);
+            border-radius: 50%;
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: all 0.4s ease;
+        }
+
+        .capybara-orange::before {
+            content: '';
+            width: 6px;
+            height: 8px;
+            background: #228B22;
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50% 50% 0 0;
+        }
+
+        .capybara.winner .capybara-orange {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px) scale(0.5);
+        }
+
+        .capybara.winner .capybara-head {
+            transform: rotate(-15deg);
+        }
+
+        .capybara-snout {
+            width: 25px;
+            height: 20px;
+            background: linear-gradient(135deg, #A0826D 0%, #B8977D 100%);
+            border-radius: 50%;
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: transform 0.3s ease;
+        }
+
+        .capybara-nose {
+            width: 8px;
+            height: 6px;
+            background: #2C3E50;
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Anime-style closed slit eyes for capybara */
+        .capybara-eyes {
+            position: absolute;
+            top: 14px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .capybara-eye {
+            width: 10px;
+            height: 2px;
+            background: #2C3E50;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        /* Happy capybara eyes */
+        .capybara.happy .capybara-eye {
+            height: 7px;
+            border-radius: 50%;
+            animation: sparkle 0.6s ease-in-out;
+        }
+
+        /* Sad capybara eyes */
+        .capybara.sad .capybara-eye {
+            transform: rotate(-20deg);
+            width: 8px;
+        }
+
+        /* Capybara mouth */
+        .capybara-smile {
+            position: absolute;
+            width: 12px;
+            height: 6px;
+            border: 2px solid #2C3E50;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .capybara.happy .capybara-smile {
+            opacity: 1;
+        }
+
+        .capybara.sad .capybara-smile {
+            opacity: 1;
+            border-radius: 8px 8px 0 0;
+            border-bottom: none;
+            border-top: 2px solid #2C3E50;
+        }
+
+        .capybara.happy .capybara-body {
+            animation: bounce 0.5s ease-in-out 2;
+        }
+
+        .capybara.winner .capybara-snout {
+            transform: translateX(-50%) translateY(-3px);
+        }
+
+
+        .player-label {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .player1-label {
+            background: linear-gradient(135deg, #FF8C42 0%, #FFA55C 100%);
+            color: white;
+        }
+
+        .player2-label {
+            background: linear-gradient(135deg, #8B6F47 0%, #A0826D 100%);
+            color: white;
+        }
+
+        /* Modal overlay shared by word/spelling/result phases */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .modal-overlay.hidden {
+            display: none !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 50px 40px;
+            max-width: 550px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .word-display {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+        }
+
+        .word-display h2 {
+            font-size: 3.5em;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            margin: 20px 0;
+            letter-spacing: 10px;
+        }
+
+        .instruction {
+            font-size: 1.5em;
+            color: rgba(255,255,255,0.9);
+            margin: 15px 0;
+        }
+
+        .spelling-modal .turn-indicator {
+            font-size: 1.8em;
+            color: #333;
+            margin: 0 0 20px 0;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            padding: 18px 25px;
+            font-size: 1.8em;
+            border: 4px solid #667eea;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            margin: 15px 0;
+            letter-spacing: 3px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        button {
+            padding: 18px 45px;
+            font-size: 1.3em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* Result modal feedback */
+        .result-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+
+        .result-text {
+            font-size: 1.6em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .result-word {
+            font-size: 2.2em;
+            font-weight: bold;
+            letter-spacing: 5px;
+            margin: 10px 0;
+        }
+
+        .result-correct .result-text { color: #2e7d32; }
+        .result-correct .result-word { color: #2e7d32; }
+        .result-incorrect .result-text { color: #c62828; }
+        .result-incorrect .result-word { color: #c62828; }
+
+        .result-correct {
+            border: 4px solid #c8e6c9;
+        }
+
+        .result-incorrect {
+            border: 4px solid #ffcdd2;
+        }
+
+        .your-answer {
+            font-size: 1.1em;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .your-answer span {
+            text-decoration: line-through;
+            color: #c62828;
+        }
+
+        /* Misspelled words summary in winner modal */
+        .misspelled-summary {
+            margin-top: 20px;
+            text-align: left;
+            font-size: 0.5em;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .misspelled-summary h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #c62828;
+        }
+
+        .misspelled-item {
+            padding: 6px 12px;
+            margin: 4px 0;
+            background: #fff3f3;
+            border-radius: 8px;
+            border-left: 3px solid #c62828;
+        }
+
+        .misspelled-item .correct-word {
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .misspelled-item .wrong-word {
+            text-decoration: line-through;
+            color: #c62828;
+        }
+
+        .winner-announcement {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+            text-align: center;
+            font-size: 2em;
+            color: #333;
+            display: none;
+            z-index: 1000;
+            animation: bounceIn 0.5s;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .winner-announcement.show {
+            display: block;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            z-index: 999;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cat vs Capybara Spelling Race!</h1>
+
+    <div class="game-container">
+        <div class="score">
+            <div>🏆 Cat Score: <span id="catScore">0</span></div>
+            <div>🏆 Capybara Score: <span id="capyScore">0</span></div>
+        </div>
+
+        <div class="racetrack">
+            <div style="display: flex; justify-content: space-around; margin-bottom: 10px;">
+                <span class="player-label player1-label">Player 1: Cat</span>
+                <span class="player-label player2-label">Player 2: Capybara</span>
+            </div>
+
+            <div class="track-container">
+                <svg id="trackSVG" viewBox="0 0 900 450" preserveAspectRatio="xMidYMid meet">
+                    <!-- Track border - more dramatic curves and turns -->
+                    <path class="track-path" d="M 120,230 Q 100,150 180,100 Q 280,50 380,80 Q 450,100 500,60 Q 600,0 700,80 Q 780,140 820,220 Q 850,280 800,340 Q 750,400 650,420 Q 550,440 450,410 Q 380,390 320,420 Q 240,460 160,420 Q 80,380 70,320 Q 60,260 120,230 Z" />
+
+                    <!-- Track inner -->
+                    <path class="track-inner" d="M 120,230 Q 100,150 180,100 Q 280,50 380,80 Q 450,100 500,60 Q 600,0 700,80 Q 780,140 820,220 Q 850,280 800,340 Q 750,400 650,420 Q 550,440 450,410 Q 380,390 320,420 Q 240,460 160,420 Q 80,380 70,320 Q 60,260 120,230 Z" />
+
+                    <!-- Center line dashes -->
+                    <path class="track-lines" d="M 120,230 Q 100,150 180,100 Q 280,50 380,80 Q 450,100 500,60 Q 600,0 700,80 Q 780,140 820,220 Q 850,280 800,340 Q 750,400 650,420 Q 550,440 450,410 Q 380,390 320,420 Q 240,460 160,420 Q 80,380 70,320 Q 60,260 120,230 Z" />
+
+                    <!-- Start/Finish line -->
+                    <g transform="translate(105, 205) rotate(-10)">
+                        <rect x="0" y="0" width="35" height="70" fill="white" stroke="black" stroke-width="2"/>
+                        <rect x="0" y="0" width="17.5" height="17.5" fill="black"/>
+                        <rect x="17.5" y="17.5" width="17.5" height="17.5" fill="black"/>
+                        <rect x="0" y="35" width="17.5" height="17.5" fill="black"/>
+                        <rect x="17.5" y="52.5" width="17.5" height="17.5" fill="black"/>
+                        <rect x="17.5" y="0" width="17.5" height="17.5" fill="white"/>
+                        <rect x="0" y="17.5" width="17.5" height="17.5" fill="white"/>
+                        <rect x="17.5" y="35" width="17.5" height="17.5" fill="white"/>
+                        <rect x="0" y="52.5" width="17.5" height="17.5" fill="white"/>
+                    </g>
+                </svg>
+
+                <!-- Cat racer -->
+                <div class="racer cat" id="cat" style="position: absolute; left: 120px; top: 230px;">
+                    <div class="cat-body">
+                        <div class="cat-head">
+                            <div class="cat-ear left"></div>
+                            <div class="cat-ear right"></div>
+                            <div class="cat-eyes">
+                                <div class="cat-eye"></div>
+                                <div class="cat-eye"></div>
+                            </div>
+                            <div class="cat-mouth">
+                                <div class="cat-tongue"></div>
+                            </div>
+                        </div>
+                        <div class="cat-tail"></div>
+                        <div class="cat-paws">
+                            <div class="cat-claw"></div>
+                            <div class="cat-claw"></div>
+                            <div class="cat-claw"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capybara racer -->
+                <div class="racer capybara" id="capybara" style="position: absolute; left: 120px; top: 230px;">
+                    <div class="capybara-body">
+                        <div class="capybara-head">
+                            <div class="capybara-orange"></div>
+                            <div class="capybara-ear left"></div>
+                            <div class="capybara-ear right"></div>
+                            <div class="capybara-eyes">
+                                <div class="capybara-eye"></div>
+                                <div class="capybara-eye"></div>
+                            </div>
+                            <div class="capybara-snout">
+                                <div class="capybara-nose"></div>
+                                <div class="capybara-smile"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal: Show Word -->
+    <div class="modal-overlay" id="wordPhase">
+        <div class="modal-content">
+            <div class="word-display">
+                <p class="instruction">Memorise this word!</p>
+                <h2 id="currentWord">LOADING</h2>
+                <p class="instruction" style="font-size: 1.2em; margin-top: 20px;">
+                    <span id="turnIndicator">Player 1's Turn</span>
+                </p>
+                <button onclick="startSpelling()" style="margin-top: 20px; font-size: 1.4em;">
+                    Ready! Let's Spell! →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Spell from Memory -->
+    <div class="modal-overlay hidden" id="spellingPhase">
+        <div class="modal-content spelling-modal">
+            <div class="turn-indicator" id="spellingTurnIndicator">Spell the word!</div>
+            <div>
+                <input type="text" id="spellInput" placeholder="Type from memory..."
+                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            </div>
+            <div style="margin-top: 15px;">
+                <button onclick="checkSpelling()">Submit Answer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Result (correct / incorrect) -->
+    <div class="modal-overlay hidden" id="resultPhase">
+        <div class="modal-content" id="resultContent">
+            <div class="result-icon" id="resultIcon"></div>
+            <div class="result-text" id="resultText"></div>
+            <div class="result-word" id="resultWord"></div>
+            <div class="your-answer hidden" id="yourAnswer"></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="winner-announcement" id="winner">
+        <div id="winnerText"></div>
+        <div id="misspelledList"></div>
+        <button onclick="resetGame()" style="margin-top: 20px;">Play Again!</button>
+    </div>
+
+    <script>
+        const words = [
+            'aeroplane', 'aluminium', 'analyse', 'apologise', 'behaviour',
+            'cancelled', 'centre', 'colour', 'defence', 'endeavour',
+            'favourite', 'flavour', 'harbour', 'honour', 'humour',
+            'jewellery', 'judgement', 'kerb', 'labour', 'licence',
+            'litre', 'manoeuvre', 'marvellous', 'metre', 'neighbour',
+            'organise', 'practise', 'programme', 'realise', 'recognise',
+            'rumour', 'splendour', 'theatre', 'travelled', 'tyre',
+            'aeroplane', 'catalogue', 'civilise', 'cosy', 'defence',
+            'favourite', 'grey', 'honour', 'jewellery', 'labour',
+            'marvellous', 'neighbourhood', 'odour', 'parlour', 'recognise'
+        ];
+
+        let currentWord = '';
+        let currentPlayer = 1;
+        let catScore = 0;
+        let capyScore = 0;
+        const WINNING_SCORE = 5; // Win after 5 correct spellings
+        let misspelledWords = []; // Track {word, attempt, player}
+
+        // Path points for the curved track with dramatic turns (matches the new SVG path)
+        const trackPath = [
+            { x: 120, y: 230 },   // Start
+            { x: 110, y: 180 },   // Sharp turn up-left
+            { x: 140, y: 120 },   // Climbing
+            { x: 180, y: 100 },   // Top left peak
+            { x: 250, y: 70 },    // High curve
+            { x: 330, y: 65 },    // Top middle
+            { x: 380, y: 80 },    // Twist point
+            { x: 440, y: 90 },    // Rising
+            { x: 500, y: 60 },    // Upper twist
+            { x: 570, y: 40 },    // Peak right
+            { x: 640, y: 60 },    // Descending
+            { x: 700, y: 80 },    // Right turn
+            { x: 760, y: 130 },   // Swooping down
+            { x: 800, y: 180 },   // Right side
+            { x: 820, y: 220 },   // Turning point
+            { x: 830, y: 260 },   // Sharp curve
+            { x: 815, y: 300 },   // Coming back
+            { x: 800, y: 340 },   // Lower right
+            { x: 760, y: 380 },   // Bottom right curve
+            { x: 700, y: 405 },   // Bottom
+            { x: 650, y: 420 },   // Lower stretch
+            { x: 590, y: 428 },   // Bottom middle
+            { x: 520, y: 425 },   // Curve back
+            { x: 450, y: 410 },   // Middle bottom
+            { x: 400, y: 400 },   // Turn
+            { x: 350, y: 410 },   // Lower left
+            { x: 320, y: 420 },   // Twist
+            { x: 280, y: 435 },   // Sharp turn
+            { x: 220, y: 445 },   // Bottom left
+            { x: 160, y: 420 },   // Coming back up
+            { x: 110, y: 390 },   // Left curve
+            { x: 80, y: 350 },    // Rising
+            { x: 70, y: 320 },    // Back to start area
+            { x: 75, y: 280 },    // Almost there
+            { x: 95, y: 250 },    // Final approach
+            { x: 120, y: 230 }    // Finish!
+        ];
+
+        function getPositionOnTrack(percentage) {
+            // percentage is 0 to 100
+            const totalPoints = trackPath.length - 1;
+            const position = (percentage / 100) * totalPoints;
+            const index = Math.floor(position);
+            const fraction = position - index;
+
+            if (index >= totalPoints) {
+                return trackPath[totalPoints];
+            }
+
+            const point1 = trackPath[index];
+            const point2 = trackPath[index + 1];
+
+            return {
+                x: point1.x + (point2.x - point1.x) * fraction,
+                y: point1.y + (point2.y - point1.y) * fraction
+            };
+        }
+
+        function updateRacerPosition(racerId, percentage) {
+            const position = getPositionOnTrack(percentage);
+            const racer = document.getElementById(racerId);
+            racer.style.left = position.x + 'px';
+            racer.style.top = position.y + 'px';
+        }
+
+        function playHappyAnimation(racerId) {
+            const racer = document.getElementById(racerId);
+            racer.classList.add('happy');
+            setTimeout(() => {
+                racer.classList.remove('happy');
+            }, 1200);
+        }
+
+        function playSadAnimation(racerId) {
+            const racer = document.getElementById(racerId);
+            racer.classList.add('sad');
+            setTimeout(() => {
+                racer.classList.remove('sad');
+            }, 1500);
+        }
+
+        function playWinnerAnimation(racerId) {
+            const racer = document.getElementById(racerId);
+            racer.classList.add('winner');
+        }
+
+        function getRandomWord() {
+            return words[Math.floor(Math.random() * words.length)];
+        }
+
+        function hideAllModals() {
+            document.getElementById('wordPhase').classList.add('hidden');
+            document.getElementById('spellingPhase').classList.add('hidden');
+            document.getElementById('resultPhase').classList.add('hidden');
+        }
+
+        function showNewWord() {
+            currentWord = getRandomWord();
+
+            hideAllModals();
+            document.getElementById('wordPhase').classList.remove('hidden');
+
+            document.getElementById('currentWord').textContent = currentWord.toUpperCase();
+            updateTurnIndicator();
+        }
+
+        function startSpelling() {
+            hideAllModals();
+            document.getElementById('spellingPhase').classList.remove('hidden');
+
+            document.getElementById('spellInput').value = '';
+
+            const spellingIndicator = document.getElementById('spellingTurnIndicator');
+            if (currentPlayer === 1) {
+                spellingIndicator.textContent = "Player 1 (Cat) - Spell the word!";
+                spellingIndicator.style.color = '#FF8C42';
+            } else {
+                spellingIndicator.textContent = "Player 2 (Capybara) - Spell the word!";
+                spellingIndicator.style.color = '#8B6F47';
+            }
+
+            document.getElementById('spellInput').focus();
+        }
+
+        function showResult(correct, word, attempt) {
+            hideAllModals();
+
+            const content = document.getElementById('resultContent');
+            const icon = document.getElementById('resultIcon');
+            const text = document.getElementById('resultText');
+            const wordEl = document.getElementById('resultWord');
+            const yourAnswer = document.getElementById('yourAnswer');
+
+            content.className = 'modal-content ' + (correct ? 'result-correct' : 'result-incorrect');
+
+            if (correct) {
+                icon.textContent = '✓';
+                text.textContent = 'Perfect!';
+                wordEl.textContent = word.toUpperCase();
+                yourAnswer.classList.add('hidden');
+            } else {
+                icon.textContent = '✗';
+                text.textContent = 'Not quite!';
+                wordEl.textContent = word.toUpperCase();
+                yourAnswer.innerHTML = 'You wrote: <span>' + attempt.toUpperCase() + '</span>';
+                yourAnswer.classList.remove('hidden');
+            }
+
+            document.getElementById('resultPhase').classList.remove('hidden');
+        }
+
+        function updateTurnIndicator() {
+            const indicator = document.getElementById('turnIndicator');
+            if (currentPlayer === 1) {
+                indicator.textContent = "Player 1's Turn (Cat)";
+                indicator.style.color = '#FF8C42';
+            } else {
+                indicator.textContent = "Player 2's Turn (Capybara)";
+                indicator.style.color = '#8B6F47';
+            }
+        }
+
+        function checkSpelling() {
+            const input = document.getElementById('spellInput').value.trim().toLowerCase();
+
+            if (!input) {
+                document.getElementById('spellInput').style.borderColor = '#c62828';
+                setTimeout(() => {
+                    document.getElementById('spellInput').style.borderColor = '#667eea';
+                }, 800);
+                return;
+            }
+
+            // Clear modals so the track is fully visible during animation
+            hideAllModals();
+
+            const ANIM_DELAY = 1000; // let racer movement (0.8s transition) finish
+
+            if (input === currentWord.toLowerCase()) {
+                // Update score and move racer immediately (track is now visible)
+                if (currentPlayer === 1) {
+                    catScore++;
+                    document.getElementById('catScore').textContent = catScore;
+                    updateRacerPosition('cat', (catScore / WINNING_SCORE) * 100);
+                    playHappyAnimation('cat');
+
+                    if (catScore >= WINNING_SCORE) {
+                        setTimeout(() => {
+                            playWinnerAnimation('cat');
+                            showResult(true, currentWord, input);
+                        }, ANIM_DELAY);
+                        setTimeout(() => {
+                            hideAllModals();
+                            showWinner('Cat', 1);
+                        }, ANIM_DELAY + 1500);
+                        return;
+                    }
+                } else {
+                    capyScore++;
+                    document.getElementById('capyScore').textContent = capyScore;
+                    updateRacerPosition('capybara', (capyScore / WINNING_SCORE) * 100);
+                    playHappyAnimation('capybara');
+
+                    if (capyScore >= WINNING_SCORE) {
+                        setTimeout(() => {
+                            playWinnerAnimation('capybara');
+                            showResult(true, currentWord, input);
+                        }, ANIM_DELAY);
+                        setTimeout(() => {
+                            hideAllModals();
+                            showWinner('Capybara', 2);
+                        }, ANIM_DELAY + 1500);
+                        return;
+                    }
+                }
+
+                // Show result modal after animation completes
+                setTimeout(() => {
+                    showResult(true, currentWord, input);
+                }, ANIM_DELAY);
+
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                setTimeout(() => { showNewWord(); }, ANIM_DELAY + 2000);
+            } else {
+                // Track the misspelling
+                misspelledWords.push({
+                    word: currentWord,
+                    attempt: input,
+                    player: currentPlayer
+                });
+
+                // Play sad animation (visible since modals are cleared)
+                playSadAnimation('cat');
+                playSadAnimation('capybara');
+
+                // Show result after a brief pause for the sad reaction
+                setTimeout(() => {
+                    showResult(false, currentWord, input);
+                }, 600);
+
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                setTimeout(() => { showNewWord(); }, 3000);
+            }
+        }
+
+        function showWinner(winner, playerNum) {
+            document.getElementById('overlay').classList.add('show');
+            document.getElementById('winner').classList.add('show');
+            document.getElementById('winnerText').innerHTML =
+                `${winner} WINS!<br>🎉 Congratulations Player ${playerNum}! 🎉`;
+
+            // Show misspelled words summary
+            const listEl = document.getElementById('misspelledList');
+            if (misspelledWords.length > 0) {
+                let html = '<div class="misspelled-summary"><h3>Words to practise:</h3>';
+                misspelledWords.forEach(item => {
+                    const playerName = item.player === 1 ? 'Cat' : 'Capybara';
+                    html += `<div class="misspelled-item">` +
+                        `<span class="correct-word">${item.word.toUpperCase()}</span> ← ` +
+                        `<span class="wrong-word">${item.attempt.toUpperCase()}</span> ` +
+                        `(${playerName})</div>`;
+                });
+                html += '</div>';
+                listEl.innerHTML = html;
+            } else {
+                listEl.innerHTML = '<div class="misspelled-summary"><h3>Perfect game — no misspellings!</h3></div>';
+            }
+        }
+
+        function resetGame() {
+            catScore = 0;
+            capyScore = 0;
+            currentPlayer = 1;
+            misspelledWords = [];
+
+            updateRacerPosition('cat', 0);
+            updateRacerPosition('capybara', 0);
+            document.getElementById('catScore').textContent = '0';
+            document.getElementById('capyScore').textContent = '0';
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('winner').classList.remove('show');
+            document.getElementById('misspelledList').innerHTML = '';
+
+            document.getElementById('cat').classList.remove('happy', 'sad', 'winner');
+            document.getElementById('capybara').classList.remove('happy', 'sad', 'winner');
+
+            showNewWord();
+        }
+
+        // Allow Enter key in word and spelling phases
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (!document.getElementById('wordPhase').classList.contains('hidden')) {
+                    startSpelling();
+                } else if (!document.getElementById('spellingPhase').classList.contains('hidden')) {
+                    checkSpelling();
+                }
+            }
+        });
+
+        window.onload = function() {
+            showNewWord();
+        };
+    </script>
+</body>
+</html>
