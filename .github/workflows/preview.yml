@@ -1,0 +1,92 @@
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy preview to gh-pages branch
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          PREVIEW_DIR="pr-${PR_NUMBER}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch gh-pages branch or create it
+          git fetch origin gh-pages || true
+          git checkout gh-pages || git checkout --orphan gh-pages
+
+          # Pull latest if branch exists
+          git pull origin gh-pages --rebase || true
+
+          # Clean out old preview for this PR
+          rm -rf "${PREVIEW_DIR}"
+          mkdir -p "${PREVIEW_DIR}"
+
+          # Checkout PR files into the preview directory
+          git checkout ${{ github.event.pull_request.head.sha }} -- .
+
+          # Move all non-preview, non-git files into the preview dir
+          for item in *; do
+            if [[ "$item" != pr-* && "$item" != .git ]]; then
+              cp -r "$item" "${PREVIEW_DIR}/" 2>/dev/null || true
+            fi
+          done
+
+          # Remove the non-preview files (keep only pr-* dirs and .github)
+          for item in *; do
+            if [[ "$item" != pr-* ]]; then
+              rm -rf "$item"
+            fi
+          done
+
+          git add -A
+          git commit -m "Preview for PR #${PR_NUMBER}" --allow-empty
+          git push origin gh-pages
+
+      - name: Comment preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://faunt.github.io/Sausage-Cat/pr-${prNumber}/`;
+            const body = `## Preview deployed\n\n` +
+              `- **Sausage Cats TD:** ${previewUrl}sausage-cats-td.html\n` +
+              `- **Capybara Spelling Race:** ${previewUrl}cat-capybara-spelling-race.html\n\n` +
+              `Preview updates automatically when you push new commits.`;
+
+            // Check if we already commented
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.data.find(c =>
+              c.user.login === 'github-actions[bot]' && c.body.includes('Preview deployed')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
