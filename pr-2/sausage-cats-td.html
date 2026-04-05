@@ -1,0 +1,2422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sausage Cats TD - Spelling Tower Defence!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameWrapper {
+            position: relative;
+            width: 900px;
+            height: 650px;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        /* HUD overlay */
+        #hud {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #hud > * { pointer-events: auto; }
+
+        .hud-box {
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #speedBtn {
+            background: rgba(0,0,0,0.6);
+            color: #FFD700;
+            border: 2px solid #FFD700;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #speedBtn:hover { background: rgba(255,215,0,0.2); }
+
+        /* Bottom bar for cat shop */
+        #shopBar {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #shopBar > * { pointer-events: auto; }
+
+        .shop-btn {
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: 2px solid #FF8C42;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .shop-btn:hover { background: rgba(255,140,66,0.3); transform: scale(1.05); }
+        .shop-btn.active { border-color: #FFD700; background: rgba(255,215,0,0.3); }
+        .shop-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        #catShelf {
+            display: flex;
+            gap: 6px;
+            pointer-events: auto;
+        }
+        .cat-shelf-btn {
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: 2px solid transparent;
+            padding: 4px 8px 4px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            min-width: 56px;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .cat-shelf-btn:hover:not(:disabled) { transform: scale(1.05); }
+        .cat-shelf-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+        .cat-shelf-btn .cat-head { display: block; margin: 0 auto 2px; }
+        .cat-shelf-btn .cat-name { display: block; font-size: 10px; }
+        .cat-shelf-btn .cat-cost { display: block; font-size: 10px; opacity: 0.8; }
+        .cat-shelf-btn.locked {
+            border-color: transparent;
+            background: rgba(0,0,0,0.5);
+        }
+        .cat-shelf-btn.locked .cat-name { color: #777; }
+
+        /* Spelling modal */
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 20px;
+            padding: 30px 40px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            animation: modalPop 0.3s ease-out;
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal h2 {
+            font-size: 1.6em;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .modal .word-display {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #FF8C42;
+            margin: 16px 0;
+            letter-spacing: 3px;
+            min-height: 1.4em;
+        }
+
+        .modal p {
+            color: #666;
+            margin: 8px 0;
+            font-size: 1em;
+        }
+
+        .modal input {
+            font-size: 1.4em;
+            padding: 10px 16px;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            margin: 12px 0;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .modal input:focus { border-color: #FF8C42; }
+
+        .modal button {
+            font-size: 1.1em;
+            padding: 10px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 6px;
+            transition: transform 0.15s;
+        }
+        .modal button:hover { transform: scale(1.05); }
+        .modal button:focus { outline: 3px solid #FFD700; outline-offset: 2px; transform: scale(1.05); }
+
+        .btn-primary {
+            background: #FF8C42;
+            color: #fff;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        .result-icon {
+            font-size: 3em;
+            margin: 10px 0;
+        }
+
+        /* Start screen */
+        .start-screen {
+            text-align: center;
+        }
+
+        .start-screen h1 {
+            font-size: 2em;
+            color: #FF8C42;
+            margin-bottom: 5px;
+        }
+
+        .start-screen .subtitle {
+            font-size: 1em;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .royal-illustration {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 10px;
+            cursor: pointer;
+        }
+
+        .royal-illustration img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: opacity 0.3s ease;
+        }
+
+        .royal-illustration .royal-attack {
+            opacity: 0;
+        }
+
+        .royal-illustration:hover .royal-normal {
+            opacity: 0;
+        }
+
+        .royal-illustration:hover .royal-attack {
+            opacity: 1;
+        }
+
+        .level-btn {
+            display: block;
+            width: 100%;
+            font-size: 1.1em;
+            padding: 12px;
+            margin: 8px 0;
+            border: 3px solid #FF8C42;
+            border-radius: 10px;
+            background: #fff;
+            color: #FF8C42;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .level-btn:hover {
+            background: #FF8C42;
+            color: #fff;
+        }
+
+        /* Game over screen */
+        .game-over h2 { color: #e74c3c; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="gameWrapper">
+    <canvas id="gameCanvas" width="900" height="650"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <div class="hud-box" id="coinDisplay">Coins: 0</div>
+        <div class="hud-box" id="waveDisplay">Wave 1</div>
+        <div class="hud-box" id="gateDisplay">Gate: 300 HP</div>
+        <button id="speedBtn" onclick="cycleSpeed()">2x</button>
+    </div>
+
+    <!-- Shop bar -->
+    <div id="shopBar" class="hidden">
+        <div id="catShelf"></div>
+        <button class="shop-btn" id="startWaveBtn" onclick="startNextWave()" style="border-color: #27ae60;">
+            Start Wave!
+        </button>
+    </div>
+
+    <!-- Modals rendered by JS -->
+    <div id="modalContainer"></div>
+</div>
+
+<script>
+// ============================================================
+// GAME CONSTANTS & CONFIG
+// ============================================================
+
+const CANVAS_W = 900;
+const CANVAS_H = 650;
+const GATE_MAX_HP = 300;
+const CAT_COST = 50;
+const SWORD_CAT_COST = 120;
+const CAT_RANGE = 120;
+const SWORD_CAT_RANGE = 90; // shorter range but more damage
+const CAT_FIRE_RATE = 0.6; // seconds between shots
+const SWORD_CAT_FIRE_RATE = 0.8; // slightly slower
+const SWORD_CAT_DAMAGE = 3; // hits harder
+const SAUSAGE_SPEED = 250; // pixels per second
+const ENEMY_BASE_SPEED = 40; // pixels per second
+const TRACK_WIDTH = 40;
+
+// Royal Cat - throws crown frisbees, long range
+const ROYAL_CAT_RANGE = 150;
+const ROYAL_CAT_FIRE_RATE = 1.0; // slow but powerful
+const ROYAL_CAT_DAMAGE = 2;
+const CROWN_SPEED = 200;
+
+// Claw Cat - spinning claws hit all enemies in range
+const CLAW_CAT_RANGE = 100;
+const CLAW_CAT_FIRE_RATE = 1.2; // slow, hits everything
+const CLAW_CAT_DAMAGE = 1;
+
+// Lucky Cat - throws four-leaf clovers, fast fire rate
+const LUCKY_CAT_RANGE = 110;
+const LUCKY_CAT_FIRE_RATE = 0.4; // fastest cat!
+const LUCKY_CAT_DAMAGE = 1;
+const CLOVER_SPEED = 280;
+
+// Cat types in unlock order
+const CAT_TYPES = ['sausage', 'sword', 'claw', 'royal', 'lucky'];
+const CAT_TYPE_INFO = {
+    sausage: { name: 'Sausage', color: '#FF8C42', range: CAT_RANGE, fireRate: CAT_FIRE_RATE, damage: 1, cost: 50 },
+    sword:   { name: 'Sword',   color: '#5B8CC4', range: SWORD_CAT_RANGE, fireRate: SWORD_CAT_FIRE_RATE, damage: SWORD_CAT_DAMAGE, cost: 75 },
+    claw:    { name: 'Claw',    color: '#2ECC71', range: CLAW_CAT_RANGE, fireRate: CLAW_CAT_FIRE_RATE, damage: CLAW_CAT_DAMAGE, cost: 100 },
+    royal:   { name: 'Royal',   color: '#FFD700', range: ROYAL_CAT_RANGE, fireRate: ROYAL_CAT_FIRE_RATE, damage: ROYAL_CAT_DAMAGE, cost: 125 },
+    lucky:   { name: 'Lucky',   color: '#F0F0F0', range: LUCKY_CAT_RANGE, fireRate: LUCKY_CAT_FIRE_RATE, damage: LUCKY_CAT_DAMAGE, cost: 150 }
+};
+let peakCoins = 0; // highest coins ever held, used to reveal cats
+
+// Year 4 spelling words (UK curriculum)
+const WORD_LIST = [
+    "accident", "actually", "address", "answer", "appear", "arrive",
+    "believe", "bicycle", "breath", "breathe", "build", "busy",
+    "business", "calendar", "caught", "centre", "century", "certain",
+    "circle", "complete", "consider", "continue", "decide", "describe",
+    "different", "difficult", "disappear", "early", "earth", "eight",
+    "enough", "exercise", "experience", "experiment", "extreme",
+    "famous", "favourite", "February", "forward", "fruit", "grammar",
+    "group", "guard", "guide", "heard", "heart", "height", "history",
+    "imagine", "important", "increase", "island", "knowledge", "learn",
+    "length", "library", "material", "medicine", "mention", "minute",
+    "natural", "naughty", "notice", "occasion", "often", "opposite",
+    "ordinary", "particular", "peculiar", "perhaps", "popular",
+    "position", "possess", "possible", "potatoes", "pressure",
+    "probably", "promise", "purpose", "quarter", "question", "recent",
+    "regular", "reign", "remember", "sentence", "separate", "special",
+    "straight", "strange", "strength", "suppose", "surprise",
+    "therefore", "though", "thought", "through", "various", "weight",
+    "woman", "women"
+];
+
+// Level track definitions (waypoints as [x, y] arrays)
+const LEVELS = [
+    {
+        name: "Crossroads",
+        bg: "#4a7c3f",
+        trackColor: "#c4a45a",
+        waypoints: [
+            [-30, 300],
+            [200, 300],
+            [200, 100],
+            [500, 100],
+            [500, 300],
+            [200, 300],
+            [200, 500],
+            [500, 500],
+            [500, 300],
+            [700, 300],
+            [700, 500],
+            [930, 500]
+        ]
+    },
+    {
+        name: "Figure Eight",
+        bg: "#3a6b5a",
+        trackColor: "#b8976a",
+        waypoints: [
+            [-30, 325],
+            [150, 325],
+            [150, 120],
+            [450, 120],
+            [450, 325],
+            [150, 325],
+            [150, 530],
+            [450, 530],
+            [450, 325],
+            [650, 325],
+            [650, 150],
+            [800, 150],
+            [800, 500],
+            [930, 500]
+        ]
+    },
+    {
+        name: "Spiral Loop",
+        bg: "#3d5a4f",
+        trackColor: "#a89070",
+        waypoints: [
+            [-30, 325],
+            [120, 325],
+            [120, 80],
+            [780, 80],
+            [780, 550],
+            [280, 550],
+            [280, 230],
+            [620, 230],
+            [620, 420],
+            [400, 420],
+            [400, 230],
+            [280, 230],
+            [280, 550],
+            [930, 550]
+        ]
+    }
+];
+
+const WAVES_PER_LEVEL = 10;
+
+// Wave definitions
+function getWaveConfig(waveNum) {
+    const base = { count: 0, hp: 5, strongCount: 0, strongHp: 0, bulldogCount: 0, bulldogHp: 0 };
+    if (waveNum === 1) return { ...base, count: 5, hp: 5 };
+    if (waveNum === 2) return { ...base, count: 8, hp: 6 };
+    if (waveNum === 3) return { ...base, count: 12, hp: 7 };
+    const hp = 4 + waveNum;
+    const strongCount = Math.min(waveNum - 3, 8);
+    // Bulldogs from wave 6+: slow, very tanky
+    const bulldogCount = waveNum >= 6 ? Math.min(waveNum - 5, 5) : 0;
+    const bulldogHp = hp * 5;
+    return { count: 10, hp, strongCount, strongHp: hp * 3, bulldogCount, bulldogHp };
+}
+
+// ============================================================
+// GAME STATE
+// ============================================================
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let gameState = 'menu'; // menu, placing, playing, spelling, wavePrep, gameOver
+let currentLevel = null;
+let levelIndex = 0;
+let coins = 25; // starting coins
+let gateHp = GATE_MAX_HP;
+let waveNum = 0;
+let cats = [];
+let enemies = [];
+let sausages = [];
+let particles = [];
+let placingCat = false;
+let mouseX = 0, mouseY = 0;
+let speedMultiplier = 2;
+let wordsUsed = [];
+let lastTime = 0;
+let waveEnemiesLeft = [];
+let spawnTimer = 0;
+let spawnInterval = 1.2; // seconds between enemy spawns
+let waveActive = false;
+let freeSpellAvailable = true;
+let placingFreeCats = 0;
+let pendingEnterAction = null;
+let startWaveAfterPlacing = false;
+let placingFreeCat = false;
+let draggingCat = null; // for selling cats by dragging
+
+// Track path precomputed
+let trackSegments = [];
+let trackTotalLength = 0;
+
+// ============================================================
+// TRACK HELPERS
+// ============================================================
+
+function computeTrack(waypoints) {
+    trackSegments = [];
+    trackTotalLength = 0;
+    for (let i = 0; i < waypoints.length - 1; i++) {
+        const dx = waypoints[i+1][0] - waypoints[i][0];
+        const dy = waypoints[i+1][1] - waypoints[i][1];
+        const len = Math.sqrt(dx*dx + dy*dy);
+        trackSegments.push({
+            x1: waypoints[i][0], y1: waypoints[i][1],
+            x2: waypoints[i+1][0], y2: waypoints[i+1][1],
+            length: len,
+            startDist: trackTotalLength
+        });
+        trackTotalLength += len;
+    }
+}
+
+function getPositionOnTrack(distance) {
+    let d = Math.max(0, Math.min(distance, trackTotalLength));
+    for (const seg of trackSegments) {
+        if (d <= seg.startDist + seg.length) {
+            const t = (d - seg.startDist) / seg.length;
+            return {
+                x: seg.x1 + (seg.x2 - seg.x1) * t,
+                y: seg.y1 + (seg.y2 - seg.y1) * t
+            };
+        }
+    }
+    const last = trackSegments[trackSegments.length - 1];
+    return { x: last.x2, y: last.y2 };
+}
+
+function distToTrack(px, py) {
+    let minDist = Infinity;
+    for (const seg of trackSegments) {
+        const dx = seg.x2 - seg.x1;
+        const dy = seg.y2 - seg.y1;
+        const lenSq = dx*dx + dy*dy;
+        let t = lenSq === 0 ? 0 : ((px - seg.x1)*dx + (py - seg.y1)*dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const cx = seg.x1 + t * dx;
+        const cy = seg.y1 + t * dy;
+        const dist = Math.sqrt((px-cx)*(px-cx) + (py-cy)*(py-cy));
+        minDist = Math.min(minDist, dist);
+    }
+    return minDist;
+}
+
+// ============================================================
+// DRAWING FUNCTIONS
+// ============================================================
+
+function drawTrack() {
+    const wp = currentLevel.waypoints;
+    // Draw track shadow
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = TRACK_WIDTH + 8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(wp[0][0], wp[0][1] + 3);
+    for (let i = 1; i < wp.length; i++) ctx.lineTo(wp[i][0], wp[i][1] + 3);
+    ctx.stroke();
+
+    // Main track
+    ctx.strokeStyle = currentLevel.trackColor;
+    ctx.lineWidth = TRACK_WIDTH;
+    ctx.beginPath();
+    ctx.moveTo(wp[0][0], wp[0][1]);
+    for (let i = 1; i < wp.length; i++) ctx.lineTo(wp[i][0], wp[i][1]);
+    ctx.stroke();
+
+    // Track centre line (dashed)
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([12, 10]);
+    ctx.beginPath();
+    ctx.moveTo(wp[0][0], wp[0][1]);
+    for (let i = 1; i < wp.length; i++) ctx.lineTo(wp[i][0], wp[i][1]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Gate at end
+    const gx = wp[wp.length-1][0] - 15;
+    const gy = wp[wp.length-1][1];
+    const gatePercent = gateHp / GATE_MAX_HP;
+    const gateColor = gatePercent > 0.5 ? '#27ae60' : gatePercent > 0.2 ? '#f39c12' : '#e74c3c';
+
+    // Gate structure
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(gx - 8, gy - 35, 16, 70);
+    ctx.fillStyle = gateColor;
+    ctx.fillRect(gx - 6, gy - 33, 12, 66 * gatePercent);
+
+    // Gate label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(gateHp, gx, gy + 50);
+}
+
+function drawCat(x, y, color, size) {
+    const s = size || 34;
+    // Body
+    ctx.fillStyle = color || '#FF8C42';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 2, s * 0.7, s * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Head
+    ctx.fillStyle = color || '#FF8C42';
+    ctx.beginPath();
+    ctx.arc(x, y - s * 0.5, s * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ears
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.35, y - s*0.7);
+    ctx.lineTo(x - s*0.15, y - s*1.05);
+    ctx.lineTo(x + s*0.0, y - s*0.7);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.0, y - s*0.7);
+    ctx.lineTo(x + s*0.15, y - s*1.05);
+    ctx.lineTo(x + s*0.35, y - s*0.7);
+    ctx.fill();
+
+    // Inner ears
+    ctx.fillStyle = '#FFB6C1';
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.28, y - s*0.73);
+    ctx.lineTo(x - s*0.15, y - s*0.95);
+    ctx.lineTo(x - s*0.03, y - s*0.73);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.03, y - s*0.73);
+    ctx.lineTo(x + s*0.15, y - s*0.95);
+    ctx.lineTo(x + s*0.28, y - s*0.73);
+    ctx.fill();
+
+    // Eyes (cute slits)
+    ctx.fillStyle = '#2C3E50';
+    ctx.fillRect(x - s*0.2, y - s*0.55, s*0.12, s*0.04);
+    ctx.fillRect(x + s*0.08, y - s*0.55, s*0.12, s*0.04);
+
+    // Nose
+    ctx.fillStyle = '#FFB6C1';
+    ctx.beginPath();
+    ctx.arc(x, y - s*0.38, s*0.05, 0, Math.PI*2);
+    ctx.fill();
+
+    // Sausage in paw
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath();
+    ctx.ellipse(x + s*0.5, y + s*0.1, s*0.35, s*0.1, 0.3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.ellipse(x + s*0.5, y + s*0.08, s*0.3, s*0.07, 0.3, 0, Math.PI*2);
+    ctx.fill();
+}
+
+function drawEnemy(x, y, hp, maxHp, isStrong) {
+    const s = isStrong ? 38 : 26;
+    const bodyColor = isStrong ? '#8e44ad' : '#e74c3c';
+    const headColor = isStrong ? '#9b59b6' : '#ec7063';
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + s*0.7, s*0.5, s*0.15, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Body
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(x, y + s*0.15, s*0.45, s*0.55, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Head
+    ctx.fillStyle = headColor;
+    ctx.beginPath();
+    ctx.arc(x, y - s*0.45, s*0.35, 0, Math.PI*2);
+    ctx.fill();
+
+    // Angry eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(x - s*0.12, y - s*0.5, s*0.1, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + s*0.12, y - s*0.5, s*0.1, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#2c3e50';
+    ctx.beginPath();
+    ctx.arc(x - s*0.1, y - s*0.48, s*0.05, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + s*0.14, y - s*0.48, s*0.05, 0, Math.PI*2);
+    ctx.fill();
+
+    // Angry eyebrows
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.22, y - s*0.65);
+    ctx.lineTo(x - s*0.05, y - s*0.58);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.22, y - s*0.65);
+    ctx.lineTo(x + s*0.05, y - s*0.58);
+    ctx.stroke();
+
+    // HP bar
+    if (hp < maxHp) {
+        const barW = s * 1.2;
+        const barH = 4;
+        const bx = x - barW/2;
+        const by = y - s - 8;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(bx, by, barW, barH);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(bx, by, barW * (hp / maxHp), barH);
+    }
+}
+
+function drawSwordCat(x, y, color, size) {
+    const s = size || 34;
+    // Body - blue/grey cat
+    ctx.fillStyle = color || '#5B8CC4';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 2, s * 0.7, s * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Head
+    ctx.fillStyle = color || '#5B8CC4';
+    ctx.beginPath();
+    ctx.arc(x, y - s * 0.5, s * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ears
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.35, y - s*0.7);
+    ctx.lineTo(x - s*0.15, y - s*1.05);
+    ctx.lineTo(x + s*0.0, y - s*0.7);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.0, y - s*0.7);
+    ctx.lineTo(x + s*0.15, y - s*1.05);
+    ctx.lineTo(x + s*0.35, y - s*0.7);
+    ctx.fill();
+
+    // Inner ears
+    ctx.fillStyle = '#B0C4DE';
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.28, y - s*0.73);
+    ctx.lineTo(x - s*0.15, y - s*0.95);
+    ctx.lineTo(x - s*0.03, y - s*0.73);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.03, y - s*0.73);
+    ctx.lineTo(x + s*0.15, y - s*0.95);
+    ctx.lineTo(x + s*0.28, y - s*0.73);
+    ctx.fill();
+
+    // Determined eyes (wider than sausage cat)
+    ctx.fillStyle = '#2C3E50';
+    ctx.beginPath();
+    ctx.arc(x - s*0.14, y - s*0.53, s*0.06, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + s*0.14, y - s*0.53, s*0.06, 0, Math.PI*2);
+    ctx.fill();
+
+    // Nose
+    ctx.fillStyle = '#B0C4DE';
+    ctx.beginPath();
+    ctx.arc(x, y - s*0.38, s*0.05, 0, Math.PI*2);
+    ctx.fill();
+
+    // Inflatable sword in paw - bright and puffy!
+    // Handle
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(x + s*0.25, y - s*0.05, s*0.15, s*0.35);
+    // Crossguard
+    ctx.fillStyle = '#FF6B9D';
+    ctx.beginPath();
+    ctx.ellipse(x + s*0.32, y - s*0.05, s*0.04, s*0.15, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Blade - puffy inflatable look
+    ctx.fillStyle = '#FF69B4';
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.25, y - s*0.05);
+    ctx.quadraticCurveTo(x + s*0.15, y - s*0.4, x + s*0.32, y - s*0.8);
+    ctx.quadraticCurveTo(x + s*0.5, y - s*0.4, x + s*0.4, y - s*0.05);
+    ctx.closePath();
+    ctx.fill();
+    // Shine on blade
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(x + s*0.3, y - s*0.4, s*0.04, s*0.2, -0.2, 0, Math.PI*2);
+    ctx.fill();
+}
+
+function drawRoyalCat(x, y, color, size) {
+    const s = size || 34;
+    // Body - golden cat
+    ctx.fillStyle = color || '#FFD700';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 2, s * 0.7, s * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Head
+    ctx.fillStyle = color || '#FFD700';
+    ctx.beginPath();
+    ctx.arc(x, y - s * 0.5, s * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ears
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.35, y - s*0.7);
+    ctx.lineTo(x - s*0.15, y - s*1.05);
+    ctx.lineTo(x + s*0.0, y - s*0.7);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.0, y - s*0.7);
+    ctx.lineTo(x + s*0.15, y - s*1.05);
+    ctx.lineTo(x + s*0.35, y - s*0.7);
+    ctx.fill();
+
+    // Inner ears - royal purple
+    ctx.fillStyle = '#9B59B6';
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.28, y - s*0.73);
+    ctx.lineTo(x - s*0.15, y - s*0.95);
+    ctx.lineTo(x - s*0.03, y - s*0.73);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.03, y - s*0.73);
+    ctx.lineTo(x + s*0.15, y - s*0.95);
+    ctx.lineTo(x + s*0.28, y - s*0.73);
+    ctx.fill();
+
+    // Regal eyes (half-closed, smug)
+    ctx.fillStyle = '#2C3E50';
+    ctx.fillRect(x - s*0.2, y - s*0.55, s*0.14, s*0.04);
+    ctx.fillRect(x + s*0.06, y - s*0.55, s*0.14, s*0.04);
+
+    // Nose
+    ctx.fillStyle = '#E8A0BF';
+    ctx.beginPath();
+    ctx.arc(x, y - s*0.38, s*0.05, 0, Math.PI*2);
+    ctx.fill();
+
+    // Crown on head!
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.3, y - s*0.85);
+    ctx.lineTo(x - s*0.25, y - s*1.15);
+    ctx.lineTo(x - s*0.1, y - s*0.95);
+    ctx.lineTo(x, y - s*1.2);
+    ctx.lineTo(x + s*0.1, y - s*0.95);
+    ctx.lineTo(x + s*0.25, y - s*1.15);
+    ctx.lineTo(x + s*0.3, y - s*0.85);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#B8860B';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Jewels on crown
+    ctx.fillStyle = '#E74C3C';
+    ctx.beginPath(); ctx.arc(x, y - s*1.1, s*0.04, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#3498DB';
+    ctx.beginPath(); ctx.arc(x - s*0.18, y - s*1.0, s*0.03, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + s*0.18, y - s*1.0, s*0.03, 0, Math.PI*2); ctx.fill();
+
+    // Cape/robe hint
+    ctx.fillStyle = '#8E44AD';
+    ctx.beginPath();
+    ctx.ellipse(x, y + s*0.4, s*0.5, s*0.15, 0, 0, Math.PI);
+    ctx.fill();
+}
+
+function drawClawCat(x, y, color, size) {
+    const s = size || 34;
+    // Body - green/teal cat
+    ctx.fillStyle = color || '#2ECC71';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 2, s * 0.7, s * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Head
+    ctx.fillStyle = color || '#2ECC71';
+    ctx.beginPath();
+    ctx.arc(x, y - s * 0.5, s * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ears - pointier
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.35, y - s*0.7);
+    ctx.lineTo(x - s*0.2, y - s*1.15);
+    ctx.lineTo(x + s*0.0, y - s*0.7);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.0, y - s*0.7);
+    ctx.lineTo(x + s*0.2, y - s*1.15);
+    ctx.lineTo(x + s*0.35, y - s*0.7);
+    ctx.fill();
+
+    // Inner ears
+    ctx.fillStyle = '#1ABC9C';
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.28, y - s*0.73);
+    ctx.lineTo(x - s*0.18, y - s*1.05);
+    ctx.lineTo(x - s*0.03, y - s*0.73);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.03, y - s*0.73);
+    ctx.lineTo(x + s*0.18, y - s*1.05);
+    ctx.lineTo(x + s*0.28, y - s*0.73);
+    ctx.fill();
+
+    // Wild eyes (big, alert)
+    ctx.fillStyle = '#F1C40F';
+    ctx.beginPath();
+    ctx.arc(x - s*0.14, y - s*0.53, s*0.09, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + s*0.14, y - s*0.53, s*0.09, 0, Math.PI*2);
+    ctx.fill();
+    // Slit pupils
+    ctx.fillStyle = '#2C3E50';
+    ctx.fillRect(x - s*0.155, y - s*0.6, s*0.03, s*0.14);
+    ctx.fillRect(x + s*0.125, y - s*0.6, s*0.03, s*0.14);
+
+    // Nose
+    ctx.fillStyle = '#1ABC9C';
+    ctx.beginPath();
+    ctx.arc(x, y - s*0.38, s*0.05, 0, Math.PI*2);
+    ctx.fill();
+
+    // Claws extended from paws!
+    ctx.strokeStyle = '#ECF0F1';
+    ctx.lineWidth = 2;
+    for (let i = -1; i <= 1; i++) {
+        // Left paw claws
+        ctx.beginPath();
+        ctx.moveTo(x - s*0.5, y + s*0.1);
+        ctx.lineTo(x - s*0.7 + i*s*0.05, y - s*0.1 + i*s*0.08);
+        ctx.stroke();
+        // Right paw claws
+        ctx.beginPath();
+        ctx.moveTo(x + s*0.5, y + s*0.1);
+        ctx.lineTo(x + s*0.7 + i*s*0.05, y - s*0.1 + i*s*0.08);
+        ctx.stroke();
+    }
+}
+
+
+function drawBulldog(x, y, hp, maxHp) {
+    const s = 32;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + s*0.7, s*0.6, s*0.15, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Stocky body - wide and low
+    ctx.fillStyle = '#C4A882';
+    ctx.beginPath();
+    ctx.ellipse(x, y + s*0.1, s*0.6, s*0.45, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Head - big and square-ish
+    ctx.fillStyle = '#D4B896';
+    ctx.beginPath();
+    ctx.ellipse(x, y - s*0.4, s*0.45, s*0.4, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Jowls / cheeks
+    ctx.fillStyle = '#C4A882';
+    ctx.beginPath();
+    ctx.ellipse(x - s*0.25, y - s*0.2, s*0.18, s*0.15, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + s*0.25, y - s*0.2, s*0.18, s*0.15, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Muzzle - flat face
+    ctx.fillStyle = '#E8D5B7';
+    ctx.beginPath();
+    ctx.ellipse(x, y - s*0.25, s*0.22, s*0.15, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Big nose
+    ctx.fillStyle = '#4a3728';
+    ctx.beginPath();
+    ctx.ellipse(x, y - s*0.3, s*0.1, s*0.07, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Grumpy eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(x - s*0.16, y - s*0.5, s*0.1, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + s*0.16, y - s*0.5, s*0.1, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#3d2b1f';
+    ctx.beginPath();
+    ctx.arc(x - s*0.14, y - s*0.48, s*0.06, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + s*0.18, y - s*0.48, s*0.06, 0, Math.PI*2);
+    ctx.fill();
+
+    // Angry eyebrows - extra thick
+    ctx.strokeStyle = '#3d2b1f';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.28, y - s*0.65);
+    ctx.lineTo(x - s*0.06, y - s*0.56);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.28, y - s*0.65);
+    ctx.lineTo(x + s*0.06, y - s*0.56);
+    ctx.stroke();
+
+    // Underbite teeth
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x - s*0.1, y - s*0.18, s*0.08, s*0.06);
+    ctx.fillRect(x + s*0.02, y - s*0.18, s*0.08, s*0.06);
+
+    // Floppy ears
+    ctx.fillStyle = '#B09070';
+    ctx.beginPath();
+    ctx.ellipse(x - s*0.38, y - s*0.4, s*0.12, s*0.2, 0.3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + s*0.38, y - s*0.4, s*0.12, s*0.2, -0.3, 0, Math.PI*2);
+    ctx.fill();
+
+    // Stubby legs
+    ctx.fillStyle = '#C4A882';
+    ctx.fillRect(x - s*0.4, y + s*0.35, s*0.18, s*0.2);
+    ctx.fillRect(x + s*0.22, y + s*0.35, s*0.18, s*0.2);
+
+    // HP bar
+    if (hp < maxHp) {
+        const barW = s * 1.4;
+        const barH = 5;
+        const bx = x - barW/2;
+        const by = y - s - 8;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(bx, by, barW, barH);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(bx, by, barW * (hp / maxHp), barH);
+    }
+}
+
+function drawProjectile(x, y, angle, isSword, projectileType) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    if (projectileType === 'crown') {
+        // Crown frisbee - spinning golden crown
+        ctx.rotate(Date.now() * 0.008); // spin!
+        ctx.fillStyle = '#FFD700';
+        // Crown shape
+        ctx.beginPath();
+        ctx.moveTo(-8, 4);
+        ctx.lineTo(-8, -2);
+        ctx.lineTo(-5, -8);
+        ctx.lineTo(-2, -2);
+        ctx.lineTo(0, -10);
+        ctx.lineTo(2, -2);
+        ctx.lineTo(5, -8);
+        ctx.lineTo(8, -2);
+        ctx.lineTo(8, 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#B8860B';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Jewel
+        ctx.fillStyle = '#E74C3C';
+        ctx.beginPath();
+        ctx.arc(0, -6, 2, 0, Math.PI*2);
+        ctx.fill();
+    } else if (projectileType === 'claw') {
+        // Spinning claw
+        ctx.rotate(Date.now() * 0.012); // fast spin!
+        ctx.strokeStyle = '#ECF0F1';
+        ctx.lineWidth = 2.5;
+        for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            const a = (Math.PI * 2 / 4) * i;
+            ctx.lineTo(Math.cos(a) * 10, Math.sin(a) * 10);
+            ctx.stroke();
+        }
+        ctx.fillStyle = '#2ECC71';
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI*2);
+        ctx.fill();
+    } else if (projectileType === 'clover') {
+        // Spinning four-leaf clover
+        ctx.rotate(Date.now() * 0.006);
+        ctx.fillStyle = '#2ECC71';
+        for (let i = 0; i < 4; i++) {
+            const a = (Math.PI / 2) * i;
+            ctx.beginPath();
+            ctx.ellipse(Math.cos(a) * 5, Math.sin(a) * 5, 6, 4, a, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // Centre dot
+        ctx.fillStyle = '#27AE60';
+        ctx.beginPath();
+        ctx.arc(0, 0, 2, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (isSword || projectileType === 'sword') {
+        // Inflatable sword projectile - spinning puffy blade
+        ctx.fillStyle = '#FF69B4';
+        ctx.beginPath();
+        ctx.moveTo(-12, 0);
+        ctx.quadraticCurveTo(0, -7, 12, 0);
+        ctx.quadraticCurveTo(0, 7, -12, 0);
+        ctx.fill();
+        // Shine
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(2, -2, 5, 2, 0, 0, Math.PI*2);
+        ctx.fill();
+    } else {
+        // Sausage body
+        ctx.fillStyle = '#c0392b';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 16, 6, 0, 0, Math.PI*2);
+        ctx.fill();
+        // Highlight
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.ellipse(0, -1.5, 12, 4, 0, 0, Math.PI*2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawParticles() {
+    for (const p of particles) {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawLuckyCat(x, y, color, size) {
+    const s = size || 34;
+    // Body - white cat
+    ctx.fillStyle = color || '#F0F0F0';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 2, s * 0.7, s * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Head
+    ctx.fillStyle = color || '#F0F0F0';
+    ctx.beginPath();
+    ctx.arc(x, y - s * 0.5, s * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ears
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.35, y - s*0.7);
+    ctx.lineTo(x - s*0.15, y - s*1.05);
+    ctx.lineTo(x + s*0.0, y - s*0.7);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.0, y - s*0.7);
+    ctx.lineTo(x + s*0.15, y - s*1.05);
+    ctx.lineTo(x + s*0.35, y - s*0.7);
+    ctx.fill();
+
+    // Inner ears - green for luck
+    ctx.fillStyle = '#A8E6CF';
+    ctx.beginPath();
+    ctx.moveTo(x - s*0.28, y - s*0.73);
+    ctx.lineTo(x - s*0.15, y - s*0.95);
+    ctx.lineTo(x - s*0.03, y - s*0.73);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s*0.03, y - s*0.73);
+    ctx.lineTo(x + s*0.15, y - s*0.95);
+    ctx.lineTo(x + s*0.28, y - s*0.73);
+    ctx.fill();
+
+    // Happy closed eyes (lucky/content look)
+    ctx.strokeStyle = '#2C3E50';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x - s*0.14, y - s*0.52, s*0.08, Math.PI * 0.1, Math.PI * 0.9);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + s*0.14, y - s*0.52, s*0.08, Math.PI * 0.1, Math.PI * 0.9);
+    ctx.stroke();
+
+    // Nose
+    ctx.fillStyle = '#FFB6C1';
+    ctx.beginPath();
+    ctx.arc(x, y - s*0.38, s*0.05, 0, Math.PI*2);
+    ctx.fill();
+
+    // Little four-leaf clover on head
+    ctx.fillStyle = '#27AE60';
+    const cx = x + s*0.15, cy = y - s*0.85;
+    for (let i = 0; i < 4; i++) {
+        const a = (Math.PI / 2) * i;
+        ctx.beginPath();
+        ctx.ellipse(cx + Math.cos(a)*s*0.06, cy + Math.sin(a)*s*0.06, s*0.06, s*0.04, a, 0, Math.PI*2);
+        ctx.fill();
+    }
+    // Stem
+    ctx.strokeStyle = '#1E8449';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + s*0.1, cy + s*0.12);
+    ctx.stroke();
+
+    // Clover held in paw
+    ctx.fillStyle = '#2ECC71';
+    const px = x + s*0.55, py = y + s*0.05;
+    for (let i = 0; i < 4; i++) {
+        const a = (Math.PI / 2) * i + 0.3;
+        ctx.beginPath();
+        ctx.ellipse(px + Math.cos(a)*s*0.08, py + Math.sin(a)*s*0.08, s*0.08, s*0.05, a, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+
+function drawCatByType(x, y, type, color, size) {
+    if (type === 'sword') drawSwordCat(x, y, color, size);
+    else if (type === 'royal') drawRoyalCat(x, y, color, size);
+    else if (type === 'claw') drawClawCat(x, y, color, size);
+    else if (type === 'lucky') drawLuckyCat(x, y, color, size);
+    else drawCat(x, y, color, size);
+}
+
+// Generate a small canvas with a cat head for shelf buttons
+const catHeadCache = {};
+function getCatHeadCanvas(type) {
+    if (catHeadCache[type]) return catHeadCache[type];
+    const size = 30;
+    const c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    const tctx = c.getContext('2d');
+    const info = CAT_TYPE_INFO[type];
+    const cx = size / 2, cy = size / 2 + 4;
+    const s = 14;
+
+    // Head
+    tctx.fillStyle = info.color;
+    tctx.beginPath();
+    tctx.arc(cx, cy, s * 0.8, 0, Math.PI * 2);
+    tctx.fill();
+
+    // Ears
+    tctx.beginPath();
+    tctx.moveTo(cx - s*0.6, cy - s*0.4);
+    tctx.lineTo(cx - s*0.3, cy - s*1.2);
+    tctx.lineTo(cx, cy - s*0.4);
+    tctx.fill();
+    tctx.beginPath();
+    tctx.moveTo(cx, cy - s*0.4);
+    tctx.lineTo(cx + s*0.3, cy - s*1.2);
+    tctx.lineTo(cx + s*0.6, cy - s*0.4);
+    tctx.fill();
+
+    // Inner ears
+    const earColor = type === 'royal' ? '#9B59B6' : type === 'claw' ? '#1ABC9C' : type === 'lucky' ? '#A8E6CF' : type === 'sword' ? '#B0C4DE' : '#FFB6C1';
+    tctx.fillStyle = earColor;
+    tctx.beginPath();
+    tctx.moveTo(cx - s*0.48, cy - s*0.45);
+    tctx.lineTo(cx - s*0.3, cy - s*1.0);
+    tctx.lineTo(cx - s*0.06, cy - s*0.45);
+    tctx.fill();
+    tctx.beginPath();
+    tctx.moveTo(cx + s*0.06, cy - s*0.45);
+    tctx.lineTo(cx + s*0.3, cy - s*1.0);
+    tctx.lineTo(cx + s*0.48, cy - s*0.45);
+    tctx.fill();
+
+    // Eyes
+    if (type === 'lucky') {
+        // Happy closed eyes
+        tctx.strokeStyle = '#2C3E50';
+        tctx.lineWidth = 1.5;
+        tctx.beginPath();
+        tctx.arc(cx - s*0.25, cy - s*0.1, s*0.12, Math.PI*0.1, Math.PI*0.9);
+        tctx.stroke();
+        tctx.beginPath();
+        tctx.arc(cx + s*0.25, cy - s*0.1, s*0.12, Math.PI*0.1, Math.PI*0.9);
+        tctx.stroke();
+    } else if (type === 'claw') {
+        // Wild yellow eyes with slit pupils
+        tctx.fillStyle = '#F1C40F';
+        tctx.beginPath(); tctx.arc(cx - s*0.25, cy - s*0.1, s*0.14, 0, Math.PI*2); tctx.fill();
+        tctx.beginPath(); tctx.arc(cx + s*0.25, cy - s*0.1, s*0.14, 0, Math.PI*2); tctx.fill();
+        tctx.fillStyle = '#2C3E50';
+        tctx.fillRect(cx - s*0.28, cy - s*0.22, s*0.06, s*0.24);
+        tctx.fillRect(cx + s*0.22, cy - s*0.22, s*0.06, s*0.24);
+    } else if (type === 'sausage' || type === 'royal') {
+        // Sleepy slit eyes
+        tctx.fillStyle = '#2C3E50';
+        tctx.fillRect(cx - s*0.35, cy - s*0.12, s*0.2, s*0.06);
+        tctx.fillRect(cx + s*0.15, cy - s*0.12, s*0.2, s*0.06);
+    } else {
+        // Round eyes (sword)
+        tctx.fillStyle = '#2C3E50';
+        tctx.beginPath(); tctx.arc(cx - s*0.25, cy - s*0.1, s*0.1, 0, Math.PI*2); tctx.fill();
+        tctx.beginPath(); tctx.arc(cx + s*0.25, cy - s*0.1, s*0.1, 0, Math.PI*2); tctx.fill();
+    }
+
+    // Nose
+    tctx.fillStyle = '#FFB6C1';
+    tctx.beginPath();
+    tctx.arc(cx, cy + s*0.15, s*0.08, 0, Math.PI*2);
+    tctx.fill();
+
+    // Royal crown on top
+    if (type === 'royal') {
+        tctx.fillStyle = '#FFD700';
+        tctx.beginPath();
+        tctx.moveTo(cx - s*0.5, cy - s*0.7);
+        tctx.lineTo(cx - s*0.4, cy - s*1.1);
+        tctx.lineTo(cx - s*0.15, cy - s*0.85);
+        tctx.lineTo(cx, cy - s*1.2);
+        tctx.lineTo(cx + s*0.15, cy - s*0.85);
+        tctx.lineTo(cx + s*0.4, cy - s*1.1);
+        tctx.lineTo(cx + s*0.5, cy - s*0.7);
+        tctx.closePath();
+        tctx.fill();
+    }
+
+    // Lucky clover on head
+    if (type === 'lucky') {
+        tctx.fillStyle = '#27AE60';
+        const lx = cx + s*0.3, ly = cy - s*0.7;
+        for (let i = 0; i < 4; i++) {
+            const a = (Math.PI / 2) * i;
+            tctx.beginPath();
+            tctx.ellipse(lx + Math.cos(a)*s*0.1, ly + Math.sin(a)*s*0.1, s*0.1, s*0.07, a, 0, Math.PI*2);
+            tctx.fill();
+        }
+    }
+
+    catHeadCache[type] = c;
+    return c;
+}
+
+function drawRangeCircle(x, y, range) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.arc(x, y, range || CAT_RANGE, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function drawPlacementPreview() {
+    // Draw dragged cat (selling)
+    if (draggingCat) {
+        const inSellZone = isInSellZone(mouseY);
+        const sellValue = getSellValue(draggingCat);
+        // Always show the sell zone target at the bottom
+        ctx.fillStyle = inSellZone ? 'rgba(231, 76, 60, 0.4)' : 'rgba(231, 76, 60, 0.15)';
+        ctx.fillRect(0, SELL_ZONE_Y, CANVAS_W, CANVAS_H - SELL_ZONE_Y);
+        // Sell zone label
+        ctx.fillStyle = inSellZone ? '#fff' : 'rgba(255,255,255,0.7)';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(inSellZone ? `Drop to sell for ${sellValue} coins` : `Drag here to sell for ${sellValue} coins`, CANVAS_W / 2, SELL_ZONE_Y + 22);
+        // Down arrow hint when not in sell zone
+        if (!inSellZone) {
+            ctx.fillStyle = 'rgba(231, 76, 60, 0.5)';
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText('\u25BC', CANVAS_W / 2, SELL_ZONE_Y + 44);
+        }
+        ctx.globalAlpha = 0.7;
+        drawCatByType(mouseX, mouseY, draggingCat.type, inSellZone ? '#e74c3c' : draggingCat.color, 34);
+        ctx.globalAlpha = 1;
+        return;
+    }
+
+    if (!placingCat) return;
+    const valid = isValidPlacement(mouseX, mouseY);
+    const info = CAT_TYPE_INFO[placingCatType] || CAT_TYPE_INFO.sausage;
+    ctx.globalAlpha = 0.6;
+    drawCatByType(mouseX, mouseY, placingCatType, valid ? info.color : '#999', 34);
+    ctx.globalAlpha = 1;
+    if (valid) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.arc(mouseX, mouseY, info.range, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+}
+
+// ============================================================
+// GAME LOGIC
+// ============================================================
+
+function isValidPlacement(x, y) {
+    // Must be far enough from track
+    if (distToTrack(x, y) < TRACK_WIDTH * 0.8) return false;
+    // Must be on screen
+    if (x < 20 || x > CANVAS_W - 20 || y < 50 || y > CANVAS_H - 50) return false;
+    // Must not overlap other cats
+    for (const cat of cats) {
+        const dx = cat.x - x, dy = cat.y - y;
+        if (Math.sqrt(dx*dx + dy*dy) < 55) return false;
+    }
+    return true;
+}
+
+let placingCatType = 'sausage'; // 'sausage' or 'sword'
+
+function addCat(x, y) {
+    const info = CAT_TYPE_INFO[placingCatType] || CAT_TYPE_INFO.sausage;
+    cats.push({
+        x, y,
+        cooldown: 0,
+        type: placingCatType,
+        color: info.color,
+        range: info.range,
+        fireRate: info.fireRate,
+        damage: info.damage
+    });
+}
+
+function spawnEnemy(hp, type) {
+    // type: 'normal', 'strong', 'bulldog'
+    let speed = ENEMY_BASE_SPEED;
+    if (type === 'strong') speed = ENEMY_BASE_SPEED * 0.6;
+    if (type === 'bulldog') speed = ENEMY_BASE_SPEED * 0.4; // very slow
+    enemies.push({
+        distance: 0,
+        hp: hp,
+        maxHp: hp,
+        speed: speed,
+        type: type,
+        isStrong: type === 'strong',
+        x: 0, y: 0
+    });
+}
+
+function spawnExplosion(x, y, count, color) {
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 30 + Math.random() * 80;
+        particles.push({
+            x, y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 1,
+            decay: 1.5 + Math.random(),
+            size: 2 + Math.random() * 4,
+            color: color || ['#FF8C42', '#FFD700', '#FF6B6B', '#FFA500'][Math.floor(Math.random()*4)]
+        });
+    }
+}
+
+function update(dt) {
+    if (gameState !== 'playing' && gameState !== 'wavePrep' && !(gameState === 'placing' && waveActive)) return;
+
+    const adt = dt * speedMultiplier;
+
+    // Spawn enemies from queue
+    if (waveActive && waveEnemiesLeft.length > 0) {
+        spawnTimer -= adt;
+        if (spawnTimer <= 0) {
+            const e = waveEnemiesLeft.shift();
+            spawnEnemy(e.hp, e.type);
+            spawnTimer = spawnInterval;
+        }
+    }
+
+    // Move enemies
+    for (const enemy of enemies) {
+        enemy.distance += enemy.speed * adt;
+        const pos = getPositionOnTrack(enemy.distance);
+        enemy.x = pos.x;
+        enemy.y = pos.y;
+
+        // Reached end?
+        if (enemy.distance >= trackTotalLength) {
+            // Deal damage to gate
+            gateHp = Math.max(0, gateHp - enemy.hp);
+            // Rider also deals damage
+            if (enemy.rider) {
+                gateHp = Math.max(0, gateHp - enemy.rider.hp);
+            }
+            spawnExplosion(enemy.x, enemy.y, 8, '#e74c3c');
+            enemy.dead = true;
+            updateHUD();
+        }
+    }
+
+    // Check for purple dudes mounting bulldogs
+    for (const strong of enemies) {
+        if (strong.dead || strong.type !== 'strong' || strong.mounted) continue;
+        for (const bulldog of enemies) {
+            if (bulldog.dead || bulldog.type !== 'bulldog') continue;
+            // Check if they're close on the track (purple caught up to bulldog)
+            const trackDist = Math.abs(strong.distance - bulldog.distance);
+            if (trackDist < 15) {
+                // Mount! Purple dude rides the bulldog
+                strong.mounted = true;
+                strong.dead = true; // remove from field
+                bulldog.rider = {
+                    hp: strong.hp,
+                    maxHp: strong.maxHp
+                };
+                spawnExplosion(bulldog.x, bulldog.y, 8, '#9b59b6');
+                break;
+            }
+        }
+    }
+
+    // Cat firing
+    for (const cat of cats) {
+        cat.cooldown = Math.max(0, cat.cooldown - adt);
+        if (cat.cooldown <= 0) {
+            const range = cat.range || CAT_RANGE;
+
+            if (cat.type === 'claw') {
+                // Claw Cat: hits ALL enemies in range at once
+                let hitAny = false;
+                for (const enemy of enemies) {
+                    if (enemy.dead) continue;
+                    const dx = enemy.x - cat.x;
+                    const dy = enemy.y - cat.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist <= range) {
+                        sausages.push({
+                            x: cat.x, y: cat.y,
+                            target: enemy,
+                            speed: SAUSAGE_SPEED * 1.2,
+                            angle: Math.atan2(dy, dx),
+                            damage: cat.damage || 1,
+                            projectileType: 'claw'
+                        });
+                        hitAny = true;
+                    }
+                }
+                if (hitAny) cat.cooldown = cat.fireRate || CLAW_CAT_FIRE_RATE;
+            } else {
+                // All other cats: target lowest health enemy in range
+                let nearest = null;
+                let lowestHp = Infinity;
+                for (const enemy of enemies) {
+                    if (enemy.dead) continue;
+                    const dx = enemy.x - cat.x;
+                    const dy = enemy.y - cat.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist <= range && enemy.hp < lowestHp) {
+                        nearest = enemy;
+                        lowestHp = enemy.hp;
+                    }
+                }
+                if (nearest) {
+                    const dx = nearest.x - cat.x;
+                    const dy = nearest.y - cat.y;
+                    const projType = cat.type === 'royal' ? 'crown' : cat.type === 'sword' ? 'sword' : cat.type === 'lucky' ? 'clover' : 'sausage';
+                    const projSpeed = cat.type === 'royal' ? CROWN_SPEED : cat.type === 'lucky' ? CLOVER_SPEED : SAUSAGE_SPEED;
+                    sausages.push({
+                        x: cat.x, y: cat.y,
+                        target: nearest,
+                        speed: projSpeed,
+                        angle: Math.atan2(dy, dx),
+                        damage: cat.damage || 1,
+                        isSword: cat.type === 'sword',
+                        projectileType: projType
+                    });
+                    cat.cooldown = cat.fireRate || CAT_FIRE_RATE;
+                }
+            }
+        }
+    }
+
+    // Move sausages
+    for (const s of sausages) {
+        if (s.target.dead) {
+            // Retarget or remove
+            s.dead = true;
+            continue;
+        }
+        const dx = s.target.x - s.x;
+        const dy = s.target.y - s.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        s.angle = Math.atan2(dy, dx);
+
+        if (dist < 10) {
+            // Hit!
+            s.target.hp -= (s.damage || 1);
+            s.dead = true;
+            const hitColor = s.projectileType === 'crown' ? '#FFD700' : s.projectileType === 'claw' ? '#2ECC71' : s.projectileType === 'clover' ? '#27AE60' : s.isSword ? '#5B8CC4' : '#c0392b';
+            spawnExplosion(s.x, s.y, s.projectileType === 'claw' ? 4 : s.isSword ? 5 : 3, hitColor);
+
+            if (s.target.hp <= 0) {
+                // Enemy popped!
+                coins += Math.ceil(s.target.maxHp / 3);
+                spawnExplosion(s.target.x, s.target.y, 15);
+                s.target.dead = true;
+                // If bulldog had a rider, drop the purple dude off
+                if (s.target.rider) {
+                    const rider = s.target.rider;
+                    enemies.push({
+                        distance: s.target.distance,
+                        hp: rider.hp,
+                        maxHp: rider.maxHp,
+                        speed: ENEMY_BASE_SPEED * 0.6,
+                        type: 'strong',
+                        isStrong: true,
+                        x: s.target.x,
+                        y: s.target.y
+                    });
+                    spawnExplosion(s.target.x, s.target.y, 8, '#9b59b6');
+                }
+                updateHUD();
+            }
+        } else {
+            const move = s.speed * adt;
+            s.x += (dx / dist) * move;
+            s.y += (dy / dist) * move;
+        }
+    }
+
+    // Update particles
+    for (const p of particles) {
+        p.x += p.vx * adt;
+        p.y += p.vy * adt;
+        p.vx *= (1 - 2 * adt);
+        p.vy *= (1 - 2 * adt);
+        p.life -= p.decay * adt;
+    }
+
+    // Clean up dead things
+    enemies = enemies.filter(e => !e.dead);
+    sausages = sausages.filter(s => !s.dead);
+    particles = particles.filter(p => p.life > 0);
+
+    // Check wave complete
+    if (waveActive && waveEnemiesLeft.length === 0 && enemies.length === 0) {
+        waveActive = false;
+        freeSpellAvailable = true;
+        // Check level complete
+        if (waveNum >= WAVES_PER_LEVEL) {
+            if (levelIndex < LEVELS.length - 1) {
+                gameState = 'wavePrep';
+                showLevelCompleteModal();
+            } else {
+                gameState = 'gameOver';
+                showVictoryModal();
+            }
+        } else {
+            // Auto-start spelling for next wave
+            startSpellingRound();
+        }
+    }
+
+    // Check game over
+    if (gateHp <= 0) {
+        gameState = 'gameOver';
+        showGameOverModal();
+    }
+}
+
+function render() {
+    // Background
+    ctx.fillStyle = currentLevel ? currentLevel.bg : '#4a7c3f';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    if (!currentLevel) return;
+
+    // Grass texture dots
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    for (let i = 0; i < 200; i++) {
+        // Use seeded-ish positions based on index
+        const gx = ((i * 137 + 51) % CANVAS_W);
+        const gy = ((i * 211 + 97) % CANVAS_H);
+        ctx.fillRect(gx, gy, 2, 2);
+    }
+
+    drawTrack();
+    drawParticles();
+
+    // Draw cats
+    for (const cat of cats) {
+        drawRangeCircle(cat.x, cat.y, cat.range);
+        drawCatByType(cat.x, cat.y, cat.type, cat.color, 34);
+    }
+
+    // Draw enemies
+    for (const enemy of enemies) {
+        if (enemy.type === 'bulldog') {
+            drawBulldog(enemy.x, enemy.y, enemy.hp, enemy.maxHp);
+            // Draw rider on top if mounted
+            if (enemy.rider) {
+                drawEnemy(enemy.x, enemy.y - 20, enemy.rider.hp, enemy.rider.maxHp, true);
+            }
+        } else {
+            drawEnemy(enemy.x, enemy.y, enemy.hp, enemy.maxHp, enemy.isStrong);
+        }
+    }
+
+    // Draw projectiles
+    for (const s of sausages) {
+        drawProjectile(s.x, s.y, s.angle, s.isSword, s.projectileType);
+    }
+
+    // Placement preview
+    drawPlacementPreview();
+}
+
+function gameLoop(timestamp) {
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+    lastTime = timestamp;
+
+    update(dt);
+    render();
+    requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// HUD & UI
+// ============================================================
+
+function updateHUD() {
+    if (coins > peakCoins) peakCoins = coins;
+    document.getElementById('coinDisplay').textContent = `Coins: ${coins}`;
+    document.getElementById('waveDisplay').textContent = `${currentLevel.name} - Wave ${waveNum}/${WAVES_PER_LEVEL}`;
+    document.getElementById('gateDisplay').textContent = `Gate: ${gateHp} HP`;
+    updateShopButtons();
+}
+
+function renderCatShelf() {
+    const shelf = document.getElementById('catShelf');
+    if (!shelf) return;
+    const hideShelf = placingCat || gameState === 'spelling' || draggingCat;
+    shelf.style.display = hideShelf ? 'none' : 'flex';
+    if (hideShelf) return;
+
+    shelf.innerHTML = '';
+    for (const type of CAT_TYPES) {
+        const info = CAT_TYPE_INFO[type];
+        // Revealed once you've ever had enough coins to afford it
+        const revealed = peakCoins >= info.cost;
+        const btn = document.createElement('button');
+        btn.className = 'cat-shelf-btn' + (revealed ? '' : ' locked');
+        btn.disabled = !revealed || coins < info.cost;
+        btn.style.borderColor = revealed ? info.color : 'transparent';
+        if (revealed) {
+            const headCanvas = getCatHeadCanvas(type);
+            const img = document.createElement('img');
+            img.src = headCanvas.toDataURL();
+            img.width = 30;
+            img.height = 30;
+            img.className = 'cat-head';
+            btn.appendChild(img);
+            btn.insertAdjacentHTML('beforeend', `<span class="cat-name">${info.name}</span><span class="cat-cost">${info.cost}</span>`);
+            btn.onclick = () => startBuyCat(type);
+        } else {
+            btn.innerHTML = `<span class="cat-head" style="display:block;height:30px;line-height:30px;font-size:18px;color:#555;">?</span><span class="cat-name">???</span><span class="cat-cost">???</span>`;
+        }
+        shelf.appendChild(btn);
+    }
+}
+
+function updateShopButtons() {
+    renderCatShelf();
+    const waveBtn = document.getElementById('startWaveBtn');
+    const isPlacingFree = placingCat && (placingFreeCat || placingFreeCats > 0);
+    // Show start wave button when not in a wave, not spelling, not placing a free cat, not dragging
+    if (waveBtn) {
+        waveBtn.classList.toggle('hidden', waveActive || gameState === 'spelling' || isPlacingFree || draggingCat);
+    }
+}
+
+function cycleSpeed() {
+    if (speedMultiplier === 2) speedMultiplier = 4;
+    else if (speedMultiplier === 4) speedMultiplier = 8;
+    else if (speedMultiplier === 8) speedMultiplier = 1;
+    else speedMultiplier = 2;
+    document.getElementById('speedBtn').textContent = speedMultiplier + 'x';
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+
+function showModal(html) {
+    document.getElementById('modalContainer').innerHTML =
+        `<div class="modal-overlay"><div class="modal">${html}</div></div>`;
+}
+
+function hideModal() {
+    document.getElementById('modalContainer').innerHTML = '';
+}
+
+function showStartScreen() {
+    showModal(`
+        <div class="start-screen">
+            <div class="royal-illustration">
+                <img src="images/royal-normal.png" class="royal-normal" alt="Royal Cat">
+                <img src="images/royal-attack.png" class="royal-attack" alt="Royal Cat Attack">
+            </div>
+            <h1>Sausage Cats TD</h1>
+            <p class="subtitle">Spelling Tower Defence!</p>
+            <p>Spell words to earn cats. Place cats to defend the gate!</p>
+            <p>Survive 10 waves to advance to the next level!</p>
+            <br>
+            <button class="level-btn" onclick="startLevel(0)">Start Game!</button>
+        </div>
+    `);
+}
+
+function showSpellingModal() {
+    // Pick a word not recently used
+    let available = WORD_LIST.filter(w => !wordsUsed.includes(w));
+    if (available.length === 0) {
+        wordsUsed = [];
+        available = [...WORD_LIST];
+    }
+    const word = available[Math.floor(Math.random() * available.length)];
+    wordsUsed.push(word);
+
+    // Phase 1: Show the word
+    showModal(`
+        <h2>Memorise this word!</h2>
+        <div class="word-display" id="spellingWord">${word}</div>
+        <p>Look carefully, then click when you're ready to spell it.</p>
+        <button class="btn-primary" onclick="spellingPhase2('${word}')">I'm ready!</button>
+    `);
+}
+
+let cluesUsed = 0;
+let clueRevealed = []; // which indices have been revealed
+
+function spellingPhase2(word) {
+    cluesUsed = 0;
+    clueRevealed = new Array(word.length).fill(false);
+    renderSpellingPhase2(word);
+}
+
+function renderSpellingPhase2(word) {
+    const cluesLeft = 3 - cluesUsed;
+    // Build the question mark / revealed letter display
+    let letters = '';
+    for (let i = 0; i < word.length; i++) {
+        if (clueRevealed[i]) {
+            letters += `<span style="display:inline-block;width:28px;font-size:1.2em;color:#27ae60;font-weight:bold;">${word[i]}</span>`;
+        } else {
+            letters += `<span class="clue-letter" onclick="useClue('${word}',${i})" style="display:inline-block;width:28px;cursor:pointer;font-size:1.2em;" title="Click for a clue">?</span>`;
+        }
+    }
+
+    const clueInfo = cluesLeft > 0
+        ? `<p style="font-size:0.85em;color:#888;">Tap a ? for a clue (${cluesLeft} left, costs 5 coins each)</p>`
+        : `<p style="font-size:0.85em;color:#999;">No clues left</p>`;
+
+    showModal(`
+        <h2>Now spell it!</h2>
+        <div class="word-display">${letters}</div>
+        ${clueInfo}
+        <input type="text" id="spellingInput" placeholder="Type the word..." autocomplete="off" autocapitalize="off" spellcheck="false">
+        <br>
+        <button class="btn-primary" onclick="checkSpelling('${word}')">Check!</button>
+    `);
+    setTimeout(() => {
+        const input = document.getElementById('spellingInput');
+        if (input) {
+            input.focus();
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.stopPropagation(); // prevent global Enter handler from firing
+                    checkSpelling(word);
+                }
+            });
+        }
+    }, 100);
+}
+
+function useClue(word, clickedIndex) {
+    if (cluesUsed >= 3) return;
+    // Find unrevealed indices and pick a random one
+    const unrevealed = [];
+    for (let i = 0; i < word.length; i++) {
+        if (!clueRevealed[i]) unrevealed.push(i);
+    }
+    if (unrevealed.length === 0) return;
+    const idx = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+    clueRevealed[idx] = true;
+    cluesUsed++;
+    coins = Math.max(0, coins - 5);
+    updateHUD();
+    // Save current input value before re-rendering
+    const currentInput = document.getElementById('spellingInput');
+    const savedValue = currentInput ? currentInput.value : '';
+    renderSpellingPhase2(word);
+    // Restore input value
+    setTimeout(() => {
+        const input = document.getElementById('spellingInput');
+        if (input) input.value = savedValue;
+    }, 50);
+}
+
+function checkSpelling(correctWord) {
+    const input = document.getElementById('spellingInput');
+    const attempt = input.value.trim().toLowerCase();
+    const correct = attempt === correctWord.toLowerCase();
+
+    if (correct) {
+        coins += 50;
+        updateHUD();
+        showModal(`
+            <div class="result-icon">&#127881;</div>
+            <h2 style="color: #27ae60">Correct! +50 coins!</h2>
+            <p><strong>${correctWord}</strong> - well done!</p>
+            <p>Choose a cat from the shelf, then start the wave!</p>
+            <button class="btn-success" onclick="onSpellingSkipPlace()">OK!</button>
+        `);
+        pendingEnterAction = onSpellingSkipPlace;
+    } else {
+        showModal(`
+            <div class="result-icon">&#128557;</div>
+            <h2 style="color: #e74c3c">Not quite!</h2>
+            <p>The word was: <strong>${correctWord}</strong></p>
+            <p>You wrote: <strong>${attempt || '(nothing)'}</strong></p>
+            <p>No free cat this time — here comes the wave!</p>
+            <button class="btn-danger" onclick="onSpellingWrong()">OK!</button>
+        `);
+        pendingEnterAction = onSpellingWrong;
+    }
+}
+
+function onSpellingSkipPlace() {
+    // Go to wavePrep so player can buy cats from the shelf, then start wave
+    pendingEnterAction = null;
+    hideModal();
+    gameState = 'wavePrep';
+    updateShopButtons();
+}
+
+function onSpellingWrong() {
+    pendingEnterAction = null;
+    hideModal();
+    // No free cat — just start the wave with what you have
+    startNextWave();
+}
+
+function showLevelCompleteModal() {
+    const nextLevel = LEVELS[levelIndex + 1];
+    showModal(`
+        <div class="start-screen">
+            <div class="result-icon">&#127775;</div>
+            <h2 style="color: #27ae60">Level Complete!</h2>
+            <p>You cleared <strong>${currentLevel.name}</strong>!</p>
+            <p>Next up: <strong>${nextLevel.name}</strong></p>
+            <br>
+            <button class="btn-success" onclick="advanceToNextLevel()">Next Level!</button>
+        </div>
+    `);
+}
+
+function showVictoryModal() {
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('shopBar').classList.add('hidden');
+    showModal(`
+        <div class="start-screen">
+            <div class="result-icon">&#127942;</div>
+            <h2 style="color: #FFD700">You Win!</h2>
+            <p>You beat all ${LEVELS.length} levels!</p>
+            <p>Gate HP remaining: ${gateHp}/${GATE_MAX_HP}</p>
+            <p>Cats placed: ${cats.length}</p>
+            <br>
+            <button class="btn-primary" onclick="showStartScreen()">Play Again</button>
+        </div>
+    `);
+}
+
+function advanceToNextLevel() {
+    levelIndex++;
+    currentLevel = LEVELS[levelIndex];
+    computeTrack(currentLevel.waypoints);
+
+    // Refund cats as coins and start fresh on new track
+    let refundTotal = 0;
+    for (const cat of cats) {
+        refundTotal += getSellValue(cat);
+    }
+    const savedCoins = coins + refundTotal;
+    cats = [];
+    enemies = [];
+    sausages = [];
+    particles = [];
+    waveNum = 0;
+    waveActive = false;
+    freeSpellAvailable = true;
+    coins = savedCoins;
+
+    hideModal();
+    gameState = 'wavePrep';
+    updateHUD();
+
+    showModal(`
+        <div class="start-screen">
+            <h2>${currentLevel.name}</h2>
+            <p>New track! You have <strong>${savedCoins} coins</strong> to buy cats.</p>
+            <p>Your old cats were sold back for coins.</p>
+            <br>
+            <button class="btn-primary" onclick="beginNewLevel()">Let's go!</button>
+        </div>
+    `);
+}
+
+function beginNewLevel() {
+    hideModal();
+    gameState = 'wavePrep';
+    startSpellingRound();
+    updateShopButtons();
+}
+
+function showGameOverModal() {
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('shopBar').classList.add('hidden');
+    showModal(`
+        <div class="game-over">
+            <div class="result-icon">&#128167;</div>
+            <h2>Gate Destroyed!</h2>
+            <p>You survived ${waveNum} wave${waveNum !== 1 ? 's' : ''}!</p>
+            <p>Coins earned: ${coins}</p>
+            <br>
+            <button class="btn-primary" onclick="showStartScreen()">Play Again</button>
+        </div>
+    `);
+}
+
+// ============================================================
+// GAME FLOW
+// ============================================================
+
+function startLevel(index) {
+    levelIndex = index;
+    currentLevel = LEVELS[index];
+    computeTrack(currentLevel.waypoints);
+
+    // Reset state
+    coins = 25;
+    gateHp = GATE_MAX_HP;
+    waveNum = 0;
+    cats = [];
+    enemies = [];
+    sausages = [];
+    particles = [];
+    waveActive = false;
+    freeSpellAvailable = true;
+    wordsUsed = [];
+    peakCoins = 25; // starting coins
+
+    hideModal();
+    document.getElementById('hud').classList.remove('hidden');
+    document.getElementById('shopBar').classList.remove('hidden');
+    gameState = 'wavePrep';
+    updateHUD();
+
+    // Start with a spelling round
+    startSpellingRound();
+}
+
+function startSpellingRound() {
+    gameState = 'spelling';
+    showSpellingModal();
+}
+
+function startBuyCat(type) {
+    const info = CAT_TYPE_INFO[type] || CAT_TYPE_INFO.sausage;
+    if (coins < info.cost || placingCat) return;
+    coins -= info.cost;
+    placingCatType = type;
+    placingCat = true;
+    placingFreeCat = false;
+    if (!waveActive) gameState = 'placing';
+    // During a wave, gameState stays 'playing' so enemies keep moving
+    updateHUD();
+}
+
+function startNextWave() {
+    if (waveActive) return;
+    waveNum++;
+    const config = getWaveConfig(waveNum);
+
+    waveEnemiesLeft = [];
+    for (let i = 0; i < config.count; i++) {
+        waveEnemiesLeft.push({ hp: config.hp, type: 'normal' });
+    }
+    for (let i = 0; i < config.strongCount; i++) {
+        waveEnemiesLeft.push({ hp: config.strongHp, type: 'strong' });
+    }
+    for (let i = 0; i < config.bulldogCount; i++) {
+        waveEnemiesLeft.push({ hp: config.bulldogHp, type: 'bulldog' });
+    }
+    // Shuffle spawn order so enemy types mix — lets purple dudes catch bulldogs
+    for (let i = waveEnemiesLeft.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [waveEnemiesLeft[i], waveEnemiesLeft[j]] = [waveEnemiesLeft[j], waveEnemiesLeft[i]];
+    }
+
+    spawnTimer = 0.5;
+    spawnInterval = Math.max(0.4, 1.2 - waveNum * 0.05);
+    waveActive = true;
+    gameState = 'playing';
+    updateHUD();
+}
+
+// ============================================================
+// INPUT
+// ============================================================
+
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = CANVAS_W / rect.width;
+    const scaleY = CANVAS_H / rect.height;
+    mouseX = (e.clientX - rect.left) * scaleX;
+    mouseY = (e.clientY - rect.top) * scaleY;
+});
+
+const SELL_ZONE_Y = CANVAS_H - 60; // near the shop bar at bottom
+
+function isInSellZone(y) {
+    return y > SELL_ZONE_Y;
+}
+
+function getSellValue(cat) {
+    const info = CAT_TYPE_INFO[cat.type] || CAT_TYPE_INFO.sausage;
+    return Math.floor(info.cost * 0.8);
+}
+
+canvas.addEventListener('click', (e) => {
+    if (draggingCat) return; // handled by mouseup
+    if (placingCat && isValidPlacement(mouseX, mouseY)) {
+        addCat(mouseX, mouseY);
+        if (placingFreeCats > 1) {
+            placingFreeCats--;
+            // Keep placing
+        } else {
+            placingFreeCats = 0;
+            placingCat = false;
+            placingFreeCat = false;
+            gameState = waveActive ? 'playing' : 'wavePrep';
+            updateShopButtons();
+        }
+    }
+});
+
+// Drag-to-sell: mousedown picks up an existing cat
+canvas.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (placingCat) return; // already placing a new cat
+    // Check if clicking on an existing cat
+    for (let i = cats.length - 1; i >= 0; i--) {
+        const cat = cats[i];
+        const dx = mouseX - cat.x;
+        const dy = mouseY - cat.y;
+        if (Math.sqrt(dx*dx + dy*dy) < 30) {
+            draggingCat = cat;
+            draggingCat._origX = cat.x;
+            draggingCat._origY = cat.y;
+            cats.splice(i, 1);
+            placingCat = false; // not placing a new cat
+            updateShopButtons(); // hide shelf while dragging
+            e.preventDefault();
+            return;
+        }
+    }
+});
+
+canvas.addEventListener('mouseup', (e) => {
+    if (!draggingCat) return;
+    if (isInSellZone(mouseY)) {
+        // Sell the cat!
+        const value = getSellValue(draggingCat);
+        coins += value;
+        spawnExplosion(mouseX, mouseY, 10, '#FFD700');
+        updateHUD();
+    } else if (isValidPlacement(mouseX, mouseY)) {
+        // Move the cat to new position
+        draggingCat.x = mouseX;
+        draggingCat.y = mouseY;
+        cats.push(draggingCat);
+    } else {
+        // Invalid spot — return to original position
+        draggingCat.x = draggingCat._origX;
+        draggingCat.y = draggingCat._origY;
+        cats.push(draggingCat);
+    }
+    draggingCat = null;
+    updateShopButtons();
+});
+
+// Prevent context menu on canvas
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Global key handler for modal buttons
+document.addEventListener('keydown', (e) => {
+    const modal = document.querySelector('.modal');
+    if (!modal) return;
+
+    // Arrow keys navigate between modal buttons
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const buttons = [...modal.querySelectorAll('button')];
+        if (buttons.length < 2) return;
+        const idx = buttons.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') {
+            buttons[(idx + 1) % buttons.length].focus();
+        } else {
+            buttons[(idx - 1 + buttons.length) % buttons.length].focus();
+        }
+        e.preventDefault();
+        return;
+    }
+
+    if (e.key !== 'Enter') return;
+
+    // If there's an explicit pending action, use it
+    if (pendingEnterAction) {
+        const action = pendingEnterAction;
+        pendingEnterAction = null;
+        action();
+        return;
+    }
+
+    const focused = document.activeElement;
+    // If a modal button is focused, click it
+    if (focused && focused.tagName === 'BUTTON' && modal.contains(focused)) {
+        focused.click();
+        return;
+    }
+    // If no input is focused and there's exactly one button, click it
+    if (focused && focused.tagName === 'INPUT') return;
+    const buttons = modal.querySelectorAll('button');
+    if (buttons.length === 1) {
+        buttons[0].click();
+    }
+});
+
+// Handle right-click to cancel placement
+canvas.addEventListener('mousedown', (e) => {
+    if (e.button === 2 && placingCat) {
+        placingCat = false;
+        // Refund if bought (not free from spelling)
+        if (!placingFreeCat && placingFreeCats <= 0) {
+            const refundInfo = CAT_TYPE_INFO[placingCatType] || CAT_TYPE_INFO.sausage;
+            coins += refundInfo.cost;
+            updateHUD();
+        }
+        placingFreeCat = false;
+        gameState = waveActive ? 'playing' : 'wavePrep';
+        updateShopButtons();
+    }
+});
+
+// Touch support
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const scaleX = CANVAS_W / rect.width;
+    const scaleY = CANVAS_H / rect.height;
+    mouseX = (touch.clientX - rect.left) * scaleX;
+    mouseY = (touch.clientY - rect.top) * scaleY;
+    // Check if touching an existing cat to drag
+    if (!placingCat) {
+        for (let i = cats.length - 1; i >= 0; i--) {
+            const cat = cats[i];
+            const dx = mouseX - cat.x;
+            const dy = mouseY - cat.y;
+            if (Math.sqrt(dx*dx + dy*dy) < 30) {
+                draggingCat = cat;
+                draggingCat._origX = cat.x;
+                draggingCat._origY = cat.y;
+                cats.splice(i, 1);
+                updateShopButtons();
+                return;
+            }
+        }
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const scaleX = CANVAS_W / rect.width;
+    const scaleY = CANVAS_H / rect.height;
+    mouseX = (touch.clientX - rect.left) * scaleX;
+    mouseY = (touch.clientY - rect.top) * scaleY;
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+    // Handle dragging cat (sell/reposition)
+    if (draggingCat) {
+        if (isInSellZone(mouseY)) {
+            const value = getSellValue(draggingCat);
+            coins += value;
+            spawnExplosion(mouseX, mouseY, 10, '#FFD700');
+            updateHUD();
+        } else if (isValidPlacement(mouseX, mouseY)) {
+            draggingCat.x = mouseX;
+            draggingCat.y = mouseY;
+            cats.push(draggingCat);
+        } else {
+            draggingCat.x = draggingCat._origX;
+            draggingCat.y = draggingCat._origY;
+            cats.push(draggingCat);
+        }
+        draggingCat = null;
+        updateShopButtons();
+        return;
+    }
+    // Handle placing new cat
+    if (placingCat && isValidPlacement(mouseX, mouseY)) {
+        addCat(mouseX, mouseY);
+        if (placingFreeCats > 1) {
+            placingFreeCats--;
+        } else {
+            placingFreeCats = 0;
+            placingCat = false;
+            placingFreeCat = false;
+            gameState = waveActive ? 'playing' : 'wavePrep';
+            updateShopButtons();
+        }
+    }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+
+// Make canvas responsive
+function resizeCanvas() {
+    const wrapper = document.getElementById('gameWrapper');
+    const maxW = Math.min(window.innerWidth - 20, 900);
+    const maxH = Math.min(window.innerHeight - 20, 650);
+    const scale = Math.min(maxW / 900, maxH / 650);
+    wrapper.style.width = (900 * scale) + 'px';
+    wrapper.style.height = (650 * scale) + 'px';
+    canvas.style.width = (900 * scale) + 'px';
+    canvas.style.height = (650 * scale) + 'px';
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+showStartScreen();
+lastTime = performance.now();
+requestAnimationFrame(gameLoop);
+
+</script>
+</body>
+</html>
