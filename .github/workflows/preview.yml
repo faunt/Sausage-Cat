@@ -51,7 +51,7 @@ jobs:
             const prNumber = context.payload.pull_request.number;
             const previewUrl = `https://faunt.github.io/Sausage-Cat/pr-${prNumber}/`;
             const body = `## Preview deployed\n\n` +
-              `- **Sausage Cats TD:** ${previewUrl}sausage-cats-td.html\n` +
+              `- **Sausage Cats TD:** ${previewUrl}\n` +
               `- **Capybara Spelling Race:** ${previewUrl}cat-capybara-spelling-race.html\n\n` +
               `Preview updates automatically when you push new commits.`;
 
