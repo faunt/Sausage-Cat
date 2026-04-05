@@ -242,6 +242,36 @@
             margin-bottom: 20px;
         }
 
+        .royal-illustration {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 10px;
+            cursor: pointer;
+        }
+
+        .royal-illustration img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: opacity 0.3s ease;
+        }
+
+        .royal-illustration .royal-attack {
+            opacity: 0;
+        }
+
+        .royal-illustration:hover .royal-normal {
+            opacity: 0;
+        }
+
+        .royal-illustration:hover .royal-attack {
+            opacity: 1;
+        }
+
         .level-btn {
             display: block;
             width: 100%;
@@ -1832,6 +1862,10 @@ function hideModal() {
 function showStartScreen() {
     showModal(`
         <div class="start-screen">
+            <div class="royal-illustration">
+                <img src="images/royal-normal.png" class="royal-normal" alt="Royal Cat">
+                <img src="images/royal-attack.png" class="royal-attack" alt="Royal Cat Attack">
+            </div>
             <h1>Sausage Cats TD</h1>
             <p class="subtitle">Spelling Tower Defence!</p>
             <p>Spell words to earn cats. Place cats to defend the gate!</p>
