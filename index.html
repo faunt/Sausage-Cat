@@ -478,6 +478,25 @@ function getWaveConfig(waveNum) {
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const detailedCatSprites = {};
+for (const [type, src] of Object.entries({
+    sausage: 'images/sausage-cat-detailed.png',
+    sword: 'images/sword-cat-detailed.png',
+    claw: 'images/claw-cat-detailed.png',
+    royal: 'images/royal-cat-detailed.png',
+    lucky: 'images/lucky-cat-detailed.png'
+})) {
+    detailedCatSprites[type] = new Image();
+    detailedCatSprites[type].src = src;
+}
+const redBaddieSprite = new Image();
+redBaddieSprite.src = 'images/red-baddie-detailed.png';
+const purpleBaddieSprite = new Image();
+purpleBaddieSprite.src = 'images/purple-baddie-detailed.png';
+const bulldogSprite = new Image();
+bulldogSprite.src = 'images/bulldog-detailed.png';
+const mountedBulldogSprite = new Image();
+mountedBulldogSprite.src = 'images/purple-baddie-bulldog-mounted.png';
 
 let gameState = 'menu'; // menu, placing, playing, spelling, wavePrep, gameOver
 let currentLevel = null;
@@ -737,6 +756,41 @@ function drawEnemy(x, y, hp, maxHp, isStrong) {
         const bx = x - barW/2;
         const by = y - s - 8;
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(bx, by, barW, barH);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(bx, by, barW * (hp / maxHp), barH);
+    }
+}
+
+function drawDetailedEnemy(x, y, hp, maxHp, isStrong, facing) {
+    const sprite = isStrong ? purpleBaddieSprite : redBaddieSprite;
+    if (!sprite.complete || sprite.naturalWidth === 0) {
+        drawEnemy(x, y, hp, maxHp, isStrong);
+        return;
+    }
+
+    const spriteSize = isStrong ? 78 : 60;
+    const centreY = y - (isStrong ? 16 : 10);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 18, isStrong ? 24 : 18, isStrong ? 6 : 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(x, centreY);
+    ctx.scale(facing || 1, 1);
+    ctx.drawImage(sprite, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
+    ctx.restore();
+
+    if (hp < maxHp) {
+        const barW = isStrong ? 52 : 40;
+        const barH = 4;
+        const bx = x - barW / 2;
+        const by = y - (isStrong ? 58 : 45);
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
         ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
         ctx.fillStyle = '#e74c3c';
         ctx.fillRect(bx, by, barW, barH);
@@ -1098,6 +1152,80 @@ function drawBulldog(x, y, hp, maxHp) {
     }
 }
 
+function drawDetailedBulldog(x, y, hp, maxHp, facing) {
+    if (!bulldogSprite.complete || bulldogSprite.naturalWidth === 0) {
+        drawBulldog(x, y, hp, maxHp);
+        return;
+    }
+
+    const spriteSize = 82;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 20, 30, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(x, y - 10);
+    ctx.scale(facing || 1, 1);
+    ctx.drawImage(bulldogSprite, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
+    ctx.restore();
+
+    if (hp < maxHp) {
+        const barW = 50;
+        const barH = 5;
+        const bx = x - barW / 2;
+        const by = y - 50;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(bx, by, barW, barH);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(bx, by, barW * (hp / maxHp), barH);
+    }
+}
+
+function drawMountedBulldog(x, y, hp, maxHp, facing) {
+    const spriteSize = 104;
+
+    // Keep the shadow tied to the track while the full mounted sprite sits above it.
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 22, 38, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (mountedBulldogSprite.complete && mountedBulldogSprite.naturalWidth > 0) {
+        ctx.save();
+        ctx.translate(x, y - 30);
+        ctx.scale(facing || 1, 1);
+        ctx.drawImage(
+            mountedBulldogSprite,
+            -spriteSize / 2,
+            -spriteSize / 2,
+            spriteSize,
+            spriteSize
+        );
+        ctx.restore();
+    } else {
+        // Canvas fallback while the sprite is loading.
+        drawBulldog(x, y, hp, maxHp);
+        drawEnemy(x, y - 20, maxHp, maxHp, true);
+    }
+
+    if (hp < maxHp) {
+        const barW = 58;
+        const barH = 5;
+        const bx = x - barW / 2;
+        const by = y - 88;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(bx, by, barW, barH);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(bx, by, barW * (hp / maxHp), barH);
+    }
+}
+
 function drawProjectile(x, y, angle, isSword, projectileType) {
     ctx.save();
     ctx.translate(x, y);
@@ -1285,11 +1413,36 @@ function drawLuckyCat(x, y, color, size) {
 }
 
 function drawCatByType(x, y, type, color, size) {
-    if (type === 'sword') drawSwordCat(x, y, color, size);
-    else if (type === 'royal') drawRoyalCat(x, y, color, size);
-    else if (type === 'claw') drawClawCat(x, y, color, size);
-    else if (type === 'lucky') drawLuckyCat(x, y, color, size);
-    else drawCat(x, y, color, size);
+    const sprite = detailedCatSprites[type];
+    if (!sprite || !sprite.complete || sprite.naturalWidth === 0) {
+        // Keep the original canvas characters as a loading fallback.
+        if (type === 'sword') drawSwordCat(x, y, color, size);
+        else if (type === 'royal') drawRoyalCat(x, y, color, size);
+        else if (type === 'claw') drawClawCat(x, y, color, size);
+        else if (type === 'lucky') drawLuckyCat(x, y, color, size);
+        else drawCat(x, y, color, size);
+        return;
+    }
+
+    const baseSize = size || 34;
+    const scaleByType = type === 'royal' ? 2.25 : type === 'claw' ? 2.2 : 2.15;
+    const spriteSize = baseSize * scaleByType;
+    const centreY = y - (type === 'claw' ? 6 : 10);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 22, spriteSize * 0.28, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(x, centreY);
+    if (color === '#999') {
+        ctx.filter = 'grayscale(1)';
+    } else if (color === '#e74c3c') {
+        ctx.filter = 'sepia(1) saturate(6) hue-rotate(315deg)';
+    }
+    ctx.drawImage(sprite, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
+    ctx.restore();
 }
 
 // Generate a small canvas with a cat head for shelf buttons
@@ -1501,7 +1654,8 @@ function spawnEnemy(hp, type) {
         speed: speed,
         type: type,
         isStrong: type === 'strong',
-        x: 0, y: 0
+        x: 0, y: 0,
+        facing: 1
     });
 }
 
@@ -1538,10 +1692,13 @@ function update(dt) {
 
     // Move enemies
     for (const enemy of enemies) {
+        const previousX = enemy.x;
         enemy.distance += enemy.speed * adt;
         const pos = getPositionOnTrack(enemy.distance);
         enemy.x = pos.x;
         enemy.y = pos.y;
+        if (enemy.x < previousX - 0.01) enemy.facing = -1;
+        if (enemy.x > previousX + 0.01) enemy.facing = 1;
 
         // Reached end?
         if (enemy.distance >= trackTotalLength) {
@@ -1674,7 +1831,8 @@ function update(dt) {
                         type: 'strong',
                         isStrong: true,
                         x: s.target.x,
-                        y: s.target.y
+                        y: s.target.y,
+                        facing: s.target.facing || 1
                     });
                     spawnExplosion(s.target.x, s.target.y, 8, '#9b59b6');
                 }
@@ -1755,13 +1913,16 @@ function render() {
     // Draw enemies
     for (const enemy of enemies) {
         if (enemy.type === 'bulldog') {
-            drawBulldog(enemy.x, enemy.y, enemy.hp, enemy.maxHp);
-            // Draw rider on top if mounted
             if (enemy.rider) {
-                drawEnemy(enemy.x, enemy.y - 20, enemy.rider.hp, enemy.rider.maxHp, true);
+                // The mounted pair reads as one enemy, so show their total health in one bar.
+                const combinedHp = enemy.hp + enemy.rider.hp;
+                const combinedMaxHp = enemy.maxHp + enemy.rider.maxHp;
+                drawMountedBulldog(enemy.x, enemy.y, combinedHp, combinedMaxHp, enemy.facing);
+            } else {
+                drawDetailedBulldog(enemy.x, enemy.y, enemy.hp, enemy.maxHp, enemy.facing);
             }
         } else {
-            drawEnemy(enemy.x, enemy.y, enemy.hp, enemy.maxHp, enemy.isStrong);
+            drawDetailedEnemy(enemy.x, enemy.y, enemy.hp, enemy.maxHp, enemy.isStrong, enemy.facing);
         }
     }
 
@@ -1812,9 +1973,8 @@ function renderCatShelf() {
         btn.disabled = !revealed || coins < info.cost;
         btn.style.borderColor = revealed ? info.color : 'transparent';
         if (revealed) {
-            const headCanvas = getCatHeadCanvas(type);
             const img = document.createElement('img');
-            img.src = headCanvas.toDataURL();
+            img.src = detailedCatSprites[type].src;
             img.width = 30;
             img.height = 30;
             img.className = 'cat-head';
