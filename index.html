@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preload" as="image" href="images/launch-battle.avif" type="image/avif" fetchpriority="high">
     <title>Sausage Cats TD - Spelling Tower Defence!</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -580,28 +581,35 @@ const WORD_LIST = [
 const LEVELS = [
     {
         name: "Crossroads",
-        bg: "#527d3f",
-        trackColor: "#c4a45a",
-        backgroundPattern: "grid",
+        sceneName: "Castle Town",
+        bg: "#8b735f",
+        backgroundImage: "images/level-crossroads-city.webp",
+        trackColor: "#8f8374",
+        trackMarkColor: "rgba(255,255,255,0.22)",
+        gateWidth: 80,
         waypoints: [
-            [-30, 340],
-            [140, 340],
-            [140, 120],
-            [450, 120],
-            [450, 520],
-            [260, 520],
-            [260, 340],
-            [650, 340],
-            [650, 180],
-            [820, 180],
-            [820, 520],
-            [930, 520]
+            [-30, 360],
+            [180, 360],
+            [180, 280],
+            [470, 280],
+            [470, 520],
+            [300, 520],
+            [300, 400],
+            [650, 400],
+            [650, 300],
+            [760, 300],
+            [760, 520],
+            [840, 520]
         ]
     },
     {
         name: "Figure Eight",
-        bg: "#3a6b5a",
-        trackColor: "#b8976a",
+        sceneName: "Castle Grounds",
+        bg: "#6c963d",
+        backgroundImage: "images/level-figure-eight-grounds.webp",
+        trackColor: "#caa866",
+        trackMarkColor: "rgba(255,255,255,0.28)",
+        gateWidth: 170,
         waypoints: [
             [-30, 325],
             [150, 325],
@@ -612,32 +620,32 @@ const LEVELS = [
             [150, 530],
             [450, 530],
             [450, 325],
-            [650, 325],
-            [650, 150],
-            [800, 150],
-            [800, 500],
-            [930, 500]
+            [805, 325]
         ]
     },
     {
         name: "Spiral Loop",
-        bg: "#3d5a4f",
-        trackColor: "#a89070",
+        sceneName: "Inside the Castle",
+        bg: "#65412f",
+        backgroundImage: "images/level-spiral-castle-interior.webp",
+        trackColor: "#7b3042",
+        trackMarkColor: "rgba(255,215,120,0.42)",
+        gateWidth: 124,
         waypoints: [
             [-30, 325],
-            [120, 325],
-            [120, 80],
-            [780, 80],
-            [780, 550],
-            [280, 550],
+            [130, 325],
+            [130, 160],
+            [750, 160],
+            [750, 520],
+            [280, 520],
             [280, 230],
             [620, 230],
             [620, 420],
             [400, 420],
-            [400, 230],
-            [280, 230],
-            [280, 550],
-            [930, 550]
+            [400, 280],
+            [320, 280],
+            [320, 500],
+            [840, 500]
         ]
     }
 ];
@@ -683,6 +691,19 @@ const bulldogSprite = new Image();
 bulldogSprite.src = 'images/bulldog-detailed.png';
 const mountedBulldogSprite = new Image();
 mountedBulldogSprite.src = 'images/purple-baddie-bulldog-mounted.png';
+const castleGateSprite = new Image();
+castleGateSprite.src = 'images/castle-gate-detailed.webp';
+const levelBackgroundSprites = new Map();
+
+function getLevelBackgroundSprite(level) {
+    if (!level.backgroundImage) return null;
+    if (!levelBackgroundSprites.has(level.backgroundImage)) {
+        const sprite = new Image();
+        sprite.src = level.backgroundImage;
+        levelBackgroundSprites.set(level.backgroundImage, sprite);
+    }
+    return levelBackgroundSprites.get(level.backgroundImage);
+}
 
 let gameState = 'menu'; // menu, placing, playing, spelling, wavePrep, gameOver
 let currentLevel = null;
@@ -791,7 +812,7 @@ function drawTrack() {
     ctx.stroke();
 
     // Track centre line (dashed)
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeStyle = currentLevel.trackMarkColor || 'rgba(255,255,255,0.25)';
     ctx.lineWidth = 2;
     ctx.setLineDash([12, 10]);
     ctx.beginPath();
@@ -800,23 +821,46 @@ function drawTrack() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Gate at end
-    const gx = wp[wp.length-1][0] - 15;
+    // Castle gate at the end of the track
+    const gx = wp[wp.length-1][0];
     const gy = wp[wp.length-1][1];
     const gatePercent = gateHp / GATE_MAX_HP;
     const gateColor = gatePercent > 0.5 ? '#27ae60' : gatePercent > 0.2 ? '#f39c12' : '#e74c3c';
 
-    // Gate structure
-    ctx.fillStyle = '#8B4513';
-    ctx.fillRect(gx - 8, gy - 35, 16, 70);
+    if (castleGateSprite.complete && castleGateSprite.naturalWidth > 0) {
+        const gateWidth = currentLevel.gateWidth || 116;
+        const gateHeight = gateWidth * castleGateSprite.naturalHeight / castleGateSprite.naturalWidth;
+        ctx.drawImage(castleGateSprite, gx - gateWidth / 2, gy - gateHeight + 31, gateWidth, gateHeight);
+    } else {
+        // Simple fallback while the detailed sprite is loading.
+        ctx.fillStyle = '#9b632f';
+        ctx.fillRect(gx - 38, gy - 48, 76, 70);
+        ctx.fillStyle = '#2b140d';
+        ctx.beginPath();
+        ctx.arc(gx, gy + 2, 18, Math.PI, 0);
+        ctx.fillRect(gx - 18, gy + 2, 36, 20);
+        ctx.fill();
+    }
+
+    // Compact health bar above the gate
+    const gateWidth = currentLevel.gateWidth || 116;
+    const gateHeight = gateWidth * 468 / 512;
+    const barWidth = Math.min(92, Math.max(58, gateWidth * 0.67));
+    const barY = gy - gateHeight + 21;
+    ctx.fillStyle = 'rgba(31, 20, 15, 0.78)';
+    ctx.fillRect(gx - barWidth / 2 - 2, barY - 2, barWidth + 4, 9);
     ctx.fillStyle = gateColor;
-    ctx.fillRect(gx - 6, gy - 33, 12, 66 * gatePercent);
+    ctx.fillRect(gx - barWidth / 2, barY, barWidth * gatePercent, 5);
 
     // Gate label
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px Arial';
+    ctx.fillStyle = '#fff7df';
+    ctx.font = 'bold 11px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(gateHp, gx, gy + 50);
+    ctx.strokeStyle = 'rgba(45, 24, 14, 0.9)';
+    ctx.lineWidth = 3;
+    const labelY = Math.min(gy + 42, CANVAS_H - 70);
+    ctx.strokeText(`${gateHp} HP`, gx, labelY);
+    ctx.fillText(`${gateHp} HP`, gx, labelY);
 }
 
 function drawLevelBackgroundDetails() {
@@ -2094,21 +2138,30 @@ function update(dt) {
 }
 
 function render() {
-    // Background
-    ctx.fillStyle = currentLevel ? currentLevel.bg : '#4a7c3f';
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    if (!currentLevel) {
+        ctx.fillStyle = '#4a7c3f';
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        return;
+    }
 
-    if (!currentLevel) return;
+    const levelBackground = getLevelBackgroundSprite(currentLevel);
+    const backgroundReady = levelBackground && levelBackground.complete && levelBackground.naturalWidth > 0;
+    if (backgroundReady) {
+        ctx.drawImage(levelBackground, 0, 0, CANVAS_W, CANVAS_H);
+        ctx.fillStyle = 'rgba(25, 31, 24, 0.08)';
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    } else {
+        ctx.fillStyle = currentLevel.bg;
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        drawLevelBackgroundDetails();
 
-    drawLevelBackgroundDetails();
-
-    // Grass texture dots
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    for (let i = 0; i < 200; i++) {
-        // Use seeded-ish positions based on index
-        const gx = ((i * 137 + 51) % CANVAS_W);
-        const gy = ((i * 211 + 97) % CANVAS_H);
-        ctx.fillRect(gx, gy, 2, 2);
+        // Lightweight fallback texture while detailed scenery loads.
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        for (let i = 0; i < 200; i++) {
+            const gx = ((i * 137 + 51) % CANVAS_W);
+            const gy = ((i * 211 + 97) % CANVAS_H);
+            ctx.fillRect(gx, gy, 2, 2);
+        }
     }
 
     drawTrack();
@@ -2161,7 +2214,7 @@ function gameLoop(timestamp) {
 function updateHUD() {
     if (coins > peakCoins) peakCoins = coins;
     document.getElementById('coinDisplay').textContent = `Coins: ${coins}`;
-    document.getElementById('waveDisplay').textContent = `${currentLevel.name} - Wave ${waveNum}/${WAVES_PER_LEVEL}`;
+    document.getElementById('waveDisplay').textContent = `${currentLevel.name}: ${currentLevel.sceneName} - ${waveNum}/${WAVES_PER_LEVEL}`;
     document.getElementById('gateDisplay').textContent = `Gate: ${gateHp} HP`;
     updateShopButtons();
 }
@@ -2232,7 +2285,11 @@ function hideModal() {
 function showStartScreen() {
     showModal(`
         <div class="launch-screen">
-            <img class="launch-art" src="images/launch-battle.png" alt="Sausage Cat battling a red baddie">
+            <picture>
+                <source srcset="images/launch-battle.avif" type="image/avif">
+                <source srcset="images/launch-battle.webp" type="image/webp">
+                <img class="launch-art" src="images/launch-battle.png" width="900" height="650" fetchpriority="high" decoding="async" alt="Sausage Cat battling a red baddie">
+            </picture>
             <div class="launch-title-block">
                 <span class="launch-kicker">Spell &bull; Build &bull; Defend</span>
                 <h1>Sausage Cats <strong>TD</strong></h1>
@@ -2389,12 +2446,14 @@ function onSpellingWrong() {
 
 function showLevelCompleteModal() {
     const nextLevel = LEVELS[levelIndex + 1];
+    // Start fetching the next scene while the player reads the level-complete card.
+    getLevelBackgroundSprite(nextLevel);
     showModal(`
         <div class="start-screen">
             <div class="result-icon">&#127775;</div>
             <h2 style="color: #27ae60">Level Complete!</h2>
-            <p>You cleared <strong>${currentLevel.name}</strong>!</p>
-            <p>Next up: <strong>${nextLevel.name}</strong></p>
+            <p>You cleared <strong>${currentLevel.name}: ${currentLevel.sceneName}</strong>!</p>
+            <p>Next up: <strong>${nextLevel.name}: ${nextLevel.sceneName}</strong></p>
             <br>
             <button class="btn-success" onclick="advanceToNextLevel()">Next Level!</button>
         </div>
@@ -2444,6 +2503,7 @@ function advanceToNextLevel() {
     showModal(`
         <div class="start-screen">
             <h2>${currentLevel.name}</h2>
+            <p><strong>${currentLevel.sceneName}</strong></p>
             <p>New track! You have <strong>${savedCoins} coins</strong> to buy cats.</p>
             <p>Your old cats were sold back for coins.</p>
             <br>
