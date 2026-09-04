@@ -242,6 +242,191 @@
             margin-bottom: 20px;
         }
 
+        /* Full-screen game launch */
+        .modal-overlay.launch-overlay {
+            padding: 0;
+            background: #15192b;
+        }
+
+        .modal.start-modal {
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            padding: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #15192b;
+            text-align: left;
+            box-shadow: none;
+        }
+
+        .launch-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            isolation: isolate;
+        }
+
+        .launch-art {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -3;
+        }
+
+        .launch-screen::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -2;
+            background:
+                linear-gradient(180deg, rgba(25, 18, 63, 0.38) 0%, transparent 30%),
+                linear-gradient(0deg, rgba(13, 18, 32, 0.72) 0%, transparent 34%),
+                radial-gradient(circle at center, transparent 38%, rgba(11, 16, 32, 0.2) 100%);
+        }
+
+        .launch-title-block {
+            position: absolute;
+            top: 26px;
+            left: 50%;
+            width: 90%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 4px 12px rgba(18, 12, 44, 0.85);
+        }
+
+        .launch-kicker {
+            display: inline-block;
+            padding: 6px 13px;
+            border: 1px solid rgba(255,255,255,0.45);
+            border-radius: 999px;
+            background: rgba(31, 24, 76, 0.48);
+            color: #fff4bc;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            backdrop-filter: blur(8px);
+        }
+
+        .launch-title-block h1 {
+            margin: 7px 0 0;
+            color: #fff;
+            font-size: 54px;
+            line-height: 0.95;
+            letter-spacing: -2px;
+            text-transform: uppercase;
+        }
+
+        .launch-title-block h1 strong {
+            color: #FFD447;
+            -webkit-text-stroke: 2px #8f3c16;
+            paint-order: stroke fill;
+        }
+
+        .launch-title-block p {
+            margin: 8px 0 0;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+        }
+
+        .launch-panel {
+            position: absolute;
+            left: 34px;
+            right: 34px;
+            bottom: 24px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 24px;
+            padding: 16px 18px 16px 22px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 18px;
+            background: rgba(18, 24, 43, 0.78);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.34);
+            color: #fff;
+            backdrop-filter: blur(12px);
+        }
+
+        .launch-copy p {
+            margin: 0 0 9px;
+            color: rgba(255,255,255,0.92);
+            font-size: 14px;
+            line-height: 1.35;
+        }
+
+        .launch-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+
+        .launch-features span {
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            color: #fff4bc;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .modal .launch-button {
+            min-width: 178px;
+            margin: 0;
+            padding: 14px 24px;
+            border: 2px solid #fff0a8;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #ff9e45, #ed6e27);
+            color: #fff;
+            font-size: 18px;
+            font-weight: 900;
+            box-shadow: 0 7px 0 #9d3d1c, 0 10px 20px rgba(0,0,0,0.28);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .modal .launch-button:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 9px 0 #9d3d1c, 0 13px 24px rgba(0,0,0,0.32);
+        }
+
+        .modal .launch-button:active {
+            transform: translateY(4px);
+            box-shadow: 0 3px 0 #9d3d1c, 0 6px 12px rgba(0,0,0,0.24);
+        }
+
+        @media (max-width: 600px) {
+            .launch-title-block { top: 12px; }
+            .launch-kicker { padding: 4px 9px; font-size: 8px; letter-spacing: 1.3px; }
+            .launch-title-block h1 { margin-top: 4px; font-size: 31px; letter-spacing: -1px; }
+            .launch-title-block h1 strong { -webkit-text-stroke-width: 1px; }
+            .launch-title-block p { margin-top: 4px; font-size: 11px; }
+            .launch-panel {
+                left: 10px;
+                right: 10px;
+                bottom: 9px;
+                grid-template-columns: 1fr auto;
+                gap: 10px;
+                padding: 9px 10px;
+                border-radius: 12px;
+            }
+            .launch-copy p { margin: 0; font-size: 9px; }
+            .launch-features { display: none; }
+            .modal .launch-button {
+                min-width: 112px;
+                padding: 9px 11px;
+                border-radius: 10px;
+                font-size: 12px;
+                box-shadow: 0 4px 0 #9d3d1c, 0 7px 12px rgba(0,0,0,0.25);
+            }
+        }
+
         .royal-illustration {
             position: relative;
             width: 180px;
@@ -395,21 +580,22 @@ const WORD_LIST = [
 const LEVELS = [
     {
         name: "Crossroads",
-        bg: "#4a7c3f",
+        bg: "#527d3f",
         trackColor: "#c4a45a",
+        backgroundPattern: "grid",
         waypoints: [
-            [-30, 300],
-            [200, 300],
-            [200, 100],
-            [500, 100],
-            [500, 300],
-            [200, 300],
-            [200, 500],
-            [500, 500],
-            [500, 300],
-            [700, 300],
-            [700, 500],
-            [930, 500]
+            [-30, 340],
+            [140, 340],
+            [140, 120],
+            [450, 120],
+            [450, 520],
+            [260, 520],
+            [260, 340],
+            [650, 340],
+            [650, 180],
+            [820, 180],
+            [820, 520],
+            [930, 520]
         ]
     },
     {
@@ -631,6 +817,28 @@ function drawTrack() {
     ctx.font = 'bold 10px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(gateHp, gx, gy + 50);
+}
+
+function drawLevelBackgroundDetails() {
+    if (currentLevel.backgroundPattern !== 'grid') return;
+
+    ctx.save();
+    // Offset garden plots suggest a grid without turning the grass into a rigid checkerboard.
+    for (let row = 0; row < 7; row++) {
+        for (let col = 0; col < 10; col++) {
+            const offset = row % 2 === 0 ? 0 : 18;
+            const x = col * 96 - 18 + offset;
+            const y = row * 96 - 12;
+            ctx.fillStyle = (row + col) % 2 === 0
+                ? 'rgba(255,255,255,0.025)'
+                : 'rgba(22,67,38,0.045)';
+            ctx.fillRect(x + 8, y + 8, 78, 78);
+            ctx.strokeStyle = 'rgba(226,245,199,0.07)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + 8.5, y + 8.5, 77, 77);
+        }
+    }
+    ctx.restore();
 }
 
 function drawCat(x, y, color, size) {
@@ -1892,6 +2100,8 @@ function render() {
 
     if (!currentLevel) return;
 
+    drawLevelBackgroundDetails();
+
     // Grass texture dots
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
     for (let i = 0; i < 200; i++) {
@@ -2010,9 +2220,9 @@ function cycleSpeed() {
 // MODALS
 // ============================================================
 
-function showModal(html) {
+function showModal(html, modalClass = '', overlayClass = '') {
     document.getElementById('modalContainer').innerHTML =
-        `<div class="modal-overlay"><div class="modal">${html}</div></div>`;
+        `<div class="modal-overlay ${overlayClass}"><div class="modal ${modalClass}">${html}</div></div>`;
 }
 
 function hideModal() {
@@ -2021,19 +2231,26 @@ function hideModal() {
 
 function showStartScreen() {
     showModal(`
-        <div class="start-screen">
-            <div class="royal-illustration">
-                <img src="images/royal-normal.png" class="royal-normal" alt="Royal Cat">
-                <img src="images/royal-attack.png" class="royal-attack" alt="Royal Cat Attack">
+        <div class="launch-screen">
+            <img class="launch-art" src="images/launch-battle.png" alt="Sausage Cat battling a red baddie">
+            <div class="launch-title-block">
+                <span class="launch-kicker">Spell &bull; Build &bull; Defend</span>
+                <h1>Sausage Cats <strong>TD</strong></h1>
+                <p>Spelling Tower Defence!</p>
             </div>
-            <h1>Sausage Cats TD</h1>
-            <p class="subtitle">Spelling Tower Defence!</p>
-            <p>Spell words to earn cats. Place cats to defend the gate!</p>
-            <p>Survive 10 waves to advance to the next level!</p>
-            <br>
-            <button class="level-btn" onclick="startLevel(0)">Start Game!</button>
+            <div class="launch-panel">
+                <div class="launch-copy">
+                    <p>Spell words to earn cats, place your defenders and protect the gate.</p>
+                    <div class="launch-features">
+                        <span>Earn powerful cats</span>
+                        <span>Survive 10 waves</span>
+                        <span>Defend every level</span>
+                    </div>
+                </div>
+                <button class="launch-button" onclick="startLevel(0)">Start Game</button>
+            </div>
         </div>
-    `);
+    `, 'start-modal', 'launch-overlay');
 }
 
 function showSpellingModal() {
